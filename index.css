@@ -66,6 +66,8 @@ body {
 .authcard { width: 100%; max-width: 360px; display: flex; flex-direction: column; gap: 10px; text-align: center; }
 .authcard h1 { font-size: 20px; margin: 4px 0 0; }
 .logo { font-size: 40px; }
+.logo-img { width: 92px; height: 92px; border-radius: 50%; object-fit: cover; margin: 0 auto 2px; display: block; }
+.brand-logo { width: 26px; height: 26px; border-radius: 50%; object-fit: cover; }
 .inp {
   width: 100%; padding: 12px 14px; border-radius: 12px;
   background: var(--panel2); border: 1px solid var(--line); color: var(--txt);

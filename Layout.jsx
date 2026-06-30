@@ -1,6 +1,7 @@
 import { NavLink, Outlet } from 'react-router-dom'
 import { useAuth } from './AuthContext'
-import { Paddle, Clipboard, Calendar, Trophy, User, Settings } from './Icon'
+import { Clipboard, Calendar, Trophy, User, Settings } from './Icon'
+import logo from './logo.png'
 
 const NAV = [
   { to: '/', label: 'Skutočnosť', Icon: Clipboard, color: '#34d399', roles: ['sportovec', 'trener', 'rodic'] },
@@ -17,7 +18,7 @@ export default function Layout() {
     <div className="app">
       <header className="topbar">
         <div className="brand">
-          <span style={{ display: 'inline-flex' }}><Paddle size={22} /></span>
+          <img src={logo} alt="" className="brand-logo" />
           TDtopspin
         </div>
         <div className="user">

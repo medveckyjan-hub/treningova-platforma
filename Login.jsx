@@ -1,4 +1,4 @@
-import { Paddle } from './Icon'
+import logo from './logo.png'
 import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { supabase } from './supabase'
@@ -29,7 +29,7 @@ export default function Login() {
   return (
     <div className="authwrap">
       <form className="card authcard" onSubmit={submit}>
-        <div className="logo" style={{ color: '#4cc9b0' }}><Paddle size={46} /></div>
+        <img src={logo} alt="TDtopspin" className="logo-img" />
         <h1>TDtopspin</h1>
         <p className="muted">Prihlásenie</p>
         <input className="inp" type="email" placeholder="E-mail" value={email}
