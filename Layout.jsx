@@ -1,12 +1,13 @@
 import { NavLink, Outlet } from 'react-router-dom'
 import { useAuth } from './AuthContext'
+import { Paddle, Clipboard, Calendar, Trophy, User, Settings } from './Icon'
 
 const NAV = [
-  { to: '/', label: 'Skutočnosť', icon: '🟢', roles: ['sportovec', 'trener', 'rodic'] },
-  { to: '/kalendar', label: 'Kalendár', icon: '📅', roles: ['sportovec', 'trener', 'rodic', 'admin'] },
-  { to: '/vysledky', label: 'Výsledky', icon: '🏆', roles: ['sportovec', 'trener', 'rodic'] },
-  { to: '/profil', label: 'Profil', icon: '👤', roles: ['sportovec', 'trener', 'rodic', 'admin'] },
-  { to: '/nastavenia', label: 'Nastavenia', icon: '⚙️', roles: ['admin', 'trener'] },
+  { to: '/', label: 'Skutočnosť', Icon: Clipboard, color: '#34d399', roles: ['sportovec', 'trener', 'rodic'] },
+  { to: '/kalendar', label: 'Kalendár', Icon: Calendar, color: '#38bdf8', roles: ['sportovec', 'trener', 'rodic', 'admin'] },
+  { to: '/vysledky', label: 'Výsledky', Icon: Trophy, color: '#f0b429', roles: ['sportovec', 'trener', 'rodic'] },
+  { to: '/profil', label: 'Profil', Icon: User, color: '#7aa2ff', roles: ['sportovec', 'trener', 'rodic', 'admin'] },
+  { to: '/nastavenia', label: 'Nastavenia', Icon: Settings, color: '#a78bfa', roles: ['admin', 'trener'] },
 ]
 
 export default function Layout() {
@@ -15,7 +16,10 @@ export default function Layout() {
   return (
     <div className="app">
       <header className="topbar">
-        <div className="brand">🏓 Tréningová platforma</div>
+        <div className="brand">
+          <span style={{ display: 'inline-flex' }}><Paddle size={22} /></span>
+          TDtopspin
+        </div>
         <div className="user">
           <span className="uname">
             {(profile?.meno || '') + ' ' + (profile?.priezvisko || '')}
@@ -28,14 +32,24 @@ export default function Layout() {
       </main>
       <nav className="bottomnav">
         {items.map((n) => (
-          <NavLink
-            key={n.to}
-            to={n.to}
-            end={n.to === '/'}
-            className={({ isActive }) => 'navitem' + (isActive ? ' active' : '')}
-          >
-            <span className="ico">{n.icon}</span>
-            <span className="lbl">{n.label}</span>
+          <NavLink key={n.to} to={n.to} end={n.to === '/'} className="navitem">
+            {({ isActive }) => (
+              <>
+                <span
+                  className={'tile' + (isActive ? ' on' : '')}
+                  style={{
+                    backgroundColor: n.color + (isActive ? '33' : '1c'),
+                    borderColor: n.color + (isActive ? '88' : '40'),
+                    color: n.color,
+                  }}
+                >
+                  <n.Icon size={22} />
+                </span>
+                <span className="lbl" style={isActive ? { color: n.color } : undefined}>
+                  {n.label}
+                </span>
+              </>
+            )}
           </NavLink>
         ))}
       </nav>

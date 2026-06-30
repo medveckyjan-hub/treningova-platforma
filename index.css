@@ -27,7 +27,7 @@ body {
   padding: 12px 16px; border-bottom: 1px solid var(--line);
   position: sticky; top: 0; background: var(--bg); z-index: 5;
 }
-.brand { font-weight: 800; font-size: 15px; }
+.brand { font-weight: 800; font-size: 15px; display: flex; align-items: center; gap: 7px; }
 .user { display: flex; align-items: center; gap: 10px; }
 .uname { font-size: 13px; color: var(--muted); max-width: 38vw; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .content { flex: 1; padding: 16px; padding-bottom: 84px; max-width: 760px; width: 100%; margin: 0 auto; }
@@ -37,15 +37,21 @@ body {
   position: fixed; bottom: 0; left: 0; right: 0;
   display: flex; justify-content: space-around;
   background: var(--panel); border-top: 1px solid var(--line);
-  padding: 6px 4px env(safe-area-inset-bottom);
+  padding: 8px 4px calc(8px + env(safe-area-inset-bottom));
 }
 .navitem {
-  display: flex; flex-direction: column; align-items: center; gap: 2px;
-  text-decoration: none; color: var(--muted); font-size: 11px;
-  padding: 6px 10px; border-radius: 10px; min-width: 56px;
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  text-decoration: none; color: var(--muted); font-size: 10.5px;
+  min-width: 58px;
 }
-.navitem .ico { font-size: 18px; }
-.navitem.active { color: var(--txt); background: rgba(76, 201, 176, 0.14); }
+.navitem .tile {
+  width: 44px; height: 44px; border-radius: 13px;
+  display: grid; place-items: center;
+  border: 1px solid transparent;
+  transition: transform .12s ease, background-color .15s ease;
+}
+.navitem .tile.on { transform: translateY(-1px); }
+.navitem .lbl { font-weight: 600; }
 
 /* ---- Cards / pages ---- */
 .page-title { font-size: 20px; font-weight: 800; margin: 4px 0 14px; }
