@@ -115,3 +115,16 @@ a { color: var(--accent); }
 .wk-v { font-weight: 700; color: #34d399; }
 .sumrow { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid var(--line); font-size: 14px; }
 .okmsg { text-align: center; color: #34d399; font-weight: 700; margin-top: 10px; }
+.period { display: flex; gap: 10px; }
+.period .numbox { flex: 1; }
+
+/* ---- Profil ---- */
+.avatar { border-radius: 50%; display: grid; place-items: center; overflow: hidden; flex-shrink: 0; }
+.avatar-empty { background: var(--panel2); color: var(--muted); font-weight: 700; }
+.avgrid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
+.avopt { background: transparent; border: 2px solid transparent; border-radius: 50%; padding: 2px; cursor: pointer; display: grid; place-items: center; }
+.avopt.on { border-color: #7aa2ff; }
+.goaltag { font-size: 11px; background: rgba(240,180,41,0.2); color: #f0b429; padding: 2px 8px; border-radius: 10px; margin-left: 6px; font-weight: 700; }
+.del { background: rgba(231,76,60,0.14); color: #ff8a7a; border: none; border-radius: 8px; padding: 5px 10px; font-size: 12px; cursor: pointer; }
+.testvals { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 13px; color: var(--muted); }
+.testvals b { color: var(--txt); }

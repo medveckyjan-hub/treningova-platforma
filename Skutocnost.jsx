@@ -36,13 +36,14 @@ export default function Skutocnost() {
     <div className="page">
       <h2 className="page-title" style={{ color: ACCENT }}>Skutočnosť</h2>
       <div className="seg">
-        {[['den', 'Deň'], ['tyzden', 'Týždeň'], ['mesiac', 'Mesiac']].map(([k, l]) => (
+        {[['den', 'Deň'], ['tyzden', 'Týždeň'], ['mesiac', 'Mesiac'], ['obdobie', 'Obdobie']].map(([k, l]) => (
           <button key={k} className={'segbtn' + (tab === k ? ' on' : '')} onClick={() => setTab(k)}>{l}</button>
         ))}
       </div>
       {tab === 'den' && <DenView aid={aid} day={day} setDay={setDay} />}
       {tab === 'tyzden' && <TyzdenView aid={aid} day={day} setDay={setDay} />}
       {tab === 'mesiac' && <MesiacView aid={aid} day={day} setDay={setDay} />}
+      {tab === 'obdobie' && <ObdobieView aid={aid} />}
     </div>
   )
 }
@@ -258,8 +259,10 @@ function MesiacView({ aid, day }) {
     let alive = true
     ;(async () => {
       setLoading(true)
+      const nd = new Date(m + '-01'); nd.setMonth(nd.getMonth() + 1)
+      const nextFirst = `${nd.getFullYear()}-${pad(nd.getMonth() + 1)}-01`
       const { data } = await supabase.from('training_day').select('*')
-        .eq('athlete_id', aid).eq('kind', 'skutocnost').gte('d', m + '-01').lte('d', m + '-31')
+        .eq('athlete_id', aid).eq('kind', 'skutocnost').gte('d', m + '-01').lt('d', nextFirst)
       if (alive) { setRows(data || []); setLoading(false) }
     })()
     return () => { alive = false }
@@ -286,6 +289,89 @@ function MesiacView({ aid, day }) {
           <span>HZ celkom</span><strong>{fmtMin(total)}</strong>
         </div>
       </div>
+    </>
+  )
+}
+
+// ---------- OBDOBIE (Od–Do) ----------
+function ObdobieView({ aid }) {
+  const [od, setOd] = useState(() => `${new Date().getFullYear()}-01-01`)
+  const [doo, setDoo] = useState(() => todayStr())
+  const [rows, setRows] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    if (!aid || !od || !doo) return
+    let alive = true
+    ;(async () => {
+      setLoading(true)
+      const { data } = await supabase.from('training_day').select('*')
+        .eq('athlete_id', aid).eq('kind', 'skutocnost')
+        .gte('d', od).lte('d', doo).order('d')
+      if (alive) { setRows(data || []); setLoading(false) }
+    })()
+    return () => { alive = false }
+  }, [aid, od, doo])
+
+  const preset = (kind) => {
+    const t = new Date(); const y = t.getFullYear()
+    if (kind === 'rok') { setOd(`${y}-01-01`); setDoo(`${y}-12-31`) }
+    else if (kind === 'sezona') {
+      const m = t.getMonth() + 1; const sy = m >= 8 ? y : y - 1
+      setOd(`${sy}-08-01`); setDoo(`${sy + 1}-07-31`)
+    } else if (kind === '7t') {
+      const sdt = new Date(); sdt.setDate(sdt.getDate() - 48)
+      setOd(`${sdt.getFullYear()}-${pad(sdt.getMonth() + 1)}-${pad(sdt.getDate())}`); setDoo(todayStr())
+    }
+  }
+
+  const sum = (k) => rows.reduce((s, r) => s + (r[k] || 0), 0)
+  const totHz = sum('hz_celkom')
+  const totDz = rows.reduce((s, r) => s + (r.dz ? 1 : 0), 0)
+  const totTj = sum('tj')
+  const months = {}
+  rows.forEach((r) => { const ym = r.d.slice(0, 7); months[ym] = (months[ym] || 0) + (r.hz_celkom || 0) })
+  const monthKeys = Object.keys(months).sort()
+
+  return (
+    <>
+      <div className="card sk-card">
+        <div className="period">
+          <div className="numbox"><label className="lbl-s">Od</label>
+            <input type="date" className="inp" value={od} onChange={(e) => setOd(e.target.value)} /></div>
+          <div className="numbox"><label className="lbl-s">Do</label>
+            <input type="date" className="inp" value={doo} onChange={(e) => setDoo(e.target.value)} /></div>
+        </div>
+        <div className="flags" style={{ marginTop: 12, marginBottom: 0 }}>
+          <button className="flag" onClick={() => preset('rok')}>Tento rok</button>
+          <button className="flag" onClick={() => preset('sezona')}>Sezóna</button>
+          <button className="flag" onClick={() => preset('7t')}>Posledných 7 týž.</button>
+        </div>
+      </div>
+
+      {loading ? <div className="muted" style={{ padding: 20, textAlign: 'center' }}>Načítavam…</div> : (
+        <>
+          <div className="sk-total" style={{ marginBottom: 12 }}>
+            <span>HZ celkom za obdobie</span><strong>{fmtMin(totHz)}</strong>
+          </div>
+          <div className="card sk-card">
+            <div className="sk-h">Súčet po činnostiach</div>
+            {ALL_MIN.map(([k, l]) => (
+              <div key={k} className="sumrow"><span>{l}</span><span>{fmtMin(sum(k))}</span></div>
+            ))}
+            <div className="sumrow"><span>Dni zaťaženia (DZ)</span><span>{totDz}</span></div>
+            <div className="sumrow" style={{ borderBottom: 'none' }}><span>Tréningové jednotky (TJ)</span><span>{totTj}</span></div>
+          </div>
+          {monthKeys.length > 1 && (
+            <div className="card sk-card">
+              <div className="sk-h">Po mesiacoch (HZ)</div>
+              {monthKeys.map((ym) => (
+                <div key={ym} className="sumrow"><span>{MONTHS[+ym.slice(5) - 1]} {ym.slice(0, 4)}</span><span>{fmtMin(months[ym])}</span></div>
+              ))}
+            </div>
+          )}
+        </>
+      )}
     </>
   )
 }

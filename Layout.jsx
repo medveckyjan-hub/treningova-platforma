@@ -4,9 +4,9 @@ import { Clipboard, Calendar, Trophy, User, Settings } from './Icon'
 import logo from './logo.png'
 
 const NAV = [
-  { to: '/', label: 'Skutočnosť', Icon: Clipboard, color: '#34d399', roles: ['sportovec', 'trener', 'rodic'] },
+  { to: '/', label: 'Skutočnosť', Icon: Clipboard, color: '#34d399', roles: ['sportovec', 'trener', 'rodic', 'admin'] },
   { to: '/kalendar', label: 'Kalendár', Icon: Calendar, color: '#38bdf8', roles: ['sportovec', 'trener', 'rodic', 'admin'] },
-  { to: '/vysledky', label: 'Výsledky', Icon: Trophy, color: '#f0b429', roles: ['sportovec', 'trener', 'rodic'] },
+  { to: '/vysledky', label: 'Výsledky', Icon: Trophy, color: '#f0b429', roles: ['sportovec', 'trener', 'rodic', 'admin'] },
   { to: '/profil', label: 'Profil', Icon: User, color: '#7aa2ff', roles: ['sportovec', 'trener', 'rodic', 'admin'] },
   { to: '/nastavenia', label: 'Nastavenia', Icon: Settings, color: '#a78bfa', roles: ['admin', 'trener'] },
 ]
