@@ -87,3 +87,31 @@ body {
 .btn-link { background: none; border: none; color: var(--accent); cursor: pointer; font-size: 13px; }
 .msg { background: rgba(231,76,60,0.12); color: #ff8a7a; border-radius: 10px; padding: 9px; font-size: 13px; }
 a { color: var(--accent); }
+
+/* ---- Skutočnosť ---- */
+.seg { display: flex; gap: 6px; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 4px; margin-bottom: 14px; }
+.segbtn { flex: 1; padding: 9px; border: none; border-radius: 9px; background: transparent; color: var(--muted); font-weight: 700; font-size: 13px; cursor: pointer; }
+.segbtn.on { background: rgba(52,211,153,0.18); color: #34d399; }
+.daynav { display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 12px; }
+.navbtn { width: 38px; height: 38px; border-radius: 10px; border: 1px solid var(--line); background: var(--panel); color: var(--txt); font-size: 20px; cursor: pointer; }
+.dateinp { background: var(--panel2); border: 1px solid var(--line); border-radius: 10px; color: var(--txt); padding: 8px 10px; font-size: 14px; }
+.wd { font-weight: 800; font-size: 15px; min-width: 38px; text-align: center; }
+.sk-card { padding: 14px; margin-bottom: 12px; }
+.sk-h { font-weight: 800; font-size: 13px; color: var(--muted); text-transform: uppercase; letter-spacing: .4px; margin-bottom: 10px; }
+.flags { display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 12px; }
+.flag { padding: 7px 12px; border-radius: 20px; border: 1px solid var(--line); background: var(--panel2); color: var(--muted); font-size: 13px; font-weight: 600; cursor: pointer; }
+.flag.on { background: rgba(52,211,153,0.2); border-color: rgba(52,211,153,0.5); color: #34d399; }
+.row2 { display: flex; gap: 10px; }
+.numbox { flex: 1; display: flex; flex-direction: column; gap: 4px; }
+.numrow { display: flex; align-items: center; justify-content: space-between; padding: 7px 0; border-bottom: 1px solid var(--line); font-size: 14px; }
+.numrow:last-child { border-bottom: none; }
+.ninp { width: 78px; padding: 7px 9px; text-align: right; background: var(--panel2); border: 1px solid var(--line); border-radius: 9px; color: var(--txt); font-size: 14px; }
+.numrow-sum { font-weight: 800; }
+.numrow-sum span:last-child { color: #34d399; }
+.ta { width: 100%; padding: 10px; background: var(--panel2); border: 1px solid var(--line); border-radius: 10px; color: var(--txt); font-size: 14px; font-family: inherit; resize: vertical; }
+.sk-total { display: flex; align-items: center; justify-content: space-between; padding: 14px; background: rgba(52,211,153,0.12); border: 1px solid rgba(52,211,153,0.3); border-radius: 14px; font-weight: 700; }
+.sk-total strong { color: #34d399; font-size: 16px; }
+.weekrow { width: 100%; display: flex; align-items: center; justify-content: space-between; padding: 11px 4px; border: none; border-bottom: 1px solid var(--line); background: transparent; color: var(--txt); font-size: 14px; cursor: pointer; }
+.wk-v { font-weight: 700; color: #34d399; }
+.sumrow { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid var(--line); font-size: 14px; }
+.okmsg { text-align: center; color: #34d399; font-weight: 700; margin-top: 10px; }
