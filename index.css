@@ -74,7 +74,7 @@ body {
   font-size: 15px; text-align: left;
 }
 .inp:focus { outline: none; border-color: var(--accent2); }
-.lbl-s { text-align: left; font-size: 12px; color: var(--muted); margin: 2px 2px -4px; }
+.lbl-s { display: block; text-align: left; font-size: 12px; color: var(--muted); margin: 0 2px 5px; }
 .btn {
   width: 100%; padding: 13px; border-radius: 12px; border: none; cursor: pointer;
   background: var(--accent); color: #04231d; font-weight: 800; font-size: 15px;
@@ -128,3 +128,16 @@ a { color: var(--accent); }
 .del { background: rgba(231,76,60,0.14); color: #ff8a7a; border: none; border-radius: 8px; padding: 5px 10px; font-size: 12px; cursor: pointer; }
 .testvals { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 13px; color: var(--muted); }
 .testvals b { color: var(--txt); }
+
+/* ---- Výsledky ---- */
+.res-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 12px; color: var(--muted); margin-top: 4px; }
+.res-badge { background: rgba(240,180,41,0.18); color: #f0b429; padding: 2px 9px; border-radius: 10px; font-weight: 700; }
+.res-place { margin-top: 6px; font-weight: 700; color: #f0b429; font-size: 14px; }
+
+/* ---- Nastavenia ---- */
+.selbox { background: var(--panel2); border: 1px solid var(--line); border-radius: 9px; color: var(--txt); padding: 8px 10px; font-size: 13px; }
+.memrow { display: flex; align-items: center; justify-content: space-between; padding: 7px 0; border-bottom: 1px solid var(--line); }
+.mem-badge { font-size: 11px; padding: 2px 8px; border-radius: 10px; margin-left: 8px; font-weight: 700; }
+.b-tr { background: rgba(167,139,250,0.2); color: #a78bfa; }
+.b-sp { background: rgba(52,211,153,0.18); color: #34d399; }
+.addmem { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }

@@ -3,7 +3,16 @@ import { supabase } from './supabase'
 import { useAuth } from './AuthContext'
 
 const ACCENT = '#7aa2ff'
-const PRESET_COLORS = ['#ef4444', '#f97316', '#f0b429', '#34d399', '#10b981', '#38bdf8', '#6366f1', '#a78bfa', '#ec4899', '#64748b']
+const PRESET_GRADIENTS = [
+  ['#ff6b6b', '#ee5253'], ['#feca57', '#ff9f43'], ['#1dd1a1', '#10ac84'],
+  ['#54a0ff', '#2e86de'], ['#5f27cd', '#341f97'], ['#48dbfb', '#0abde3'],
+  ['#ff9ff3', '#f368e0'], ['#00d2d3', '#01a3a4'], ['#778ca3', '#4b6584'], ['#c8d6e5', '#8395a7'],
+]
+function initials(name) {
+  if (!name) return ''
+  const p = name.trim().split(/\s+/)
+  return ((p[0]?.[0] || '') + (p[1]?.[0] || '')).toUpperCase()
+}
 
 const AP_FIELDS = [
   ['bydlisko', 'Bydlisko', 'text'],
@@ -26,28 +35,25 @@ const TEST_FIELDS = [
   ['beep', 'Beep test'], ['beh12', 'Beh 12 min (m)'],
 ]
 
-function PaddleGlyph({ size = 40 }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden="true">
-      <circle cx="10" cy="9" r="6.3" fill="#fff" />
-      <line x1="12.2" y1="13.6" x2="16.2" y2="20.3" stroke="#fff" strokeWidth="3.6" strokeLinecap="round" />
-      <circle cx="18.4" cy="6.1" r="1.85" fill="#fff" />
-    </svg>
-  )
-}
-export function AvatarView({ avatar, size = 88 }) {
+export function AvatarView({ avatar, name, size = 88 }) {
+  const ini = initials(name)
   if (avatar && avatar.startsWith('preset:')) {
     const n = +avatar.split(':')[1] || 1
-    const col = PRESET_COLORS[(n - 1) % PRESET_COLORS.length]
-    return <div className="avatar" style={{ width: size, height: size, background: col }}><PaddleGlyph size={size * 0.46} /></div>
+    const [a, b] = PRESET_GRADIENTS[(n - 1) % PRESET_GRADIENTS.length]
+    return (
+      <div className="avatar" style={{ width: size, height: size, background: `linear-gradient(135deg, ${a}, ${b})`, color: '#fff', fontWeight: 800, fontSize: size * 0.38 }}>{ini}</div>
+    )
   }
   if (avatar) return <img className="avatar" src={avatar} style={{ width: size, height: size, objectFit: 'cover' }} alt="" />
-  return <div className="avatar avatar-empty" style={{ width: size, height: size, fontSize: size * 0.4 }}>?</div>
+  return (
+    <div className="avatar" style={{ width: size, height: size, background: 'linear-gradient(135deg, #54a0ff, #2e86de)', color: '#fff', fontWeight: 800, fontSize: size * 0.38 }}>{ini || '?'}</div>
+  )
 }
 
 export default function Profil() {
   const { user, profile } = useAuth()
   const aid = user?.id
+  const meno = `${profile?.meno || ''} ${profile?.priezvisko || ''}`.trim()
   const [tab, setTab] = useState('udaje')
 
   return (
@@ -59,7 +65,7 @@ export default function Profil() {
         ))}
       </div>
       {tab === 'udaje' && <UdajeView aid={aid} email={user?.email} />}
-      {tab === 'avatar' && <AvatarPicker aid={aid} />}
+      {tab === 'avatar' && <AvatarPicker aid={aid} meno={meno} />}
       {tab === 'testy' && <TestyView aid={aid} />}
     </div>
   )
@@ -132,7 +138,7 @@ function UdajeView({ aid, email }) {
 }
 
 // ---------- AVATAR ----------
-function AvatarPicker({ aid }) {
+function AvatarPicker({ aid, meno }) {
   const [avatar, setAvatar] = useState(null)
   const [loading, setLoading] = useState(true)
   const [msg, setMsg] = useState('')
@@ -172,7 +178,7 @@ function AvatarPicker({ aid }) {
     <>
       <div className="card sk-card" style={{ textAlign: 'center' }}>
         <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 12 }}>
-          <AvatarView avatar={avatar} size={104} />
+          <AvatarView avatar={avatar} name={meno} size={104} />
         </div>
         <label className="btn-ghost" style={{ display: 'inline-block', cursor: 'pointer' }}>
           Nahrať vlastný obrázok
@@ -182,9 +188,9 @@ function AvatarPicker({ aid }) {
       <div className="card sk-card">
         <div className="sk-h">Alebo vyber z prednastavených</div>
         <div className="avgrid">
-          {PRESET_COLORS.map((c, i) => (
+          {PRESET_GRADIENTS.map((c, i) => (
             <button key={i} className={'avopt' + (avatar === `preset:${i + 1}` ? ' on' : '')} onClick={() => saveAvatar(`preset:${i + 1}`)}>
-              <AvatarView avatar={`preset:${i + 1}`} size={54} />
+              <AvatarView avatar={`preset:${i + 1}`} name={meno} size={54} />
             </button>
           ))}
         </div>
