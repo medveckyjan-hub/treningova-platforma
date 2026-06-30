@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from './supabase'
-import { useAuth } from './AuthContext'
+import { useAthlete, AthletePicker } from './AthleteContext'
 
 const ACCENT = '#f0b429'
 const KATEGORIE = ['Liga', 'Extraliga', 'SP', 'MSR', 'ME', 'MS', 'WTT', 'iné']
@@ -12,8 +12,8 @@ const fmtD = (s) => { if (!s) return ''; const [y, m, d] = s.split('-'); return 
 const discLabel = (v) => (DISCIPLINY.find((x) => x[0] === v)?.[1] || '')
 
 export default function Vysledky() {
-  const { user } = useAuth()
-  const aid = user?.id
+  const { selectedId } = useAthlete()
+  const aid = selectedId
   const [rows, setRows] = useState([])
   const [loading, setLoading] = useState(true)
   const [open, setOpen] = useState(false)
@@ -51,6 +51,7 @@ export default function Vysledky() {
   return (
     <div className="page">
       <h2 className="page-title" style={{ color: ACCENT }}>Výsledky</h2>
+      <AthletePicker />
 
       <button className="btn" style={{ marginBottom: 12, background: ACCENT, color: '#1a1407' }} onClick={() => setOpen((o) => !o)}>
         {open ? 'Zrušiť' : '+ Pridať výsledok'}

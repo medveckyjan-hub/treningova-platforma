@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from './supabase'
-import { useAuth } from './AuthContext'
+import { useAthlete, AthletePicker } from './AthleteContext'
 
 // --- konfigurácia ukazovateľov ---
 const ST_FIELDS = [
@@ -27,14 +27,15 @@ const WD = ['Ne', 'Po', 'Ut', 'St', 'Št', 'Pi', 'So']
 const ACCENT = '#34d399'
 
 export default function Skutocnost() {
-  const { user } = useAuth()
-  const aid = user?.id
+  const { selectedId } = useAthlete()
+  const aid = selectedId
   const [tab, setTab] = useState('den')
   const [day, setDay] = useState(todayStr())
 
   return (
     <div className="page">
       <h2 className="page-title" style={{ color: ACCENT }}>Skutočnosť</h2>
+      <AthletePicker />
       <div className="seg">
         {[['den', 'Deň'], ['tyzden', 'Týždeň'], ['mesiac', 'Mesiac'], ['obdobie', 'Obdobie']].map(([k, l]) => (
           <button key={k} className={'segbtn' + (tab === k ? ' on' : '')} onClick={() => setTab(k)}>{l}</button>

@@ -4,6 +4,7 @@ import Layout from './Layout'
 import Login from './Login'
 import Register from './Register'
 import Skutocnost from './Skutocnost'
+import Plan from './Plan'
 import Kalendar from './Kalendar'
 import Vysledky from './Vysledky'
 import Profil from './Profil'
@@ -22,6 +23,7 @@ export default function App() {
         }
       >
         <Route index element={<Skutocnost />} />
+        <Route path="plan" element={<Plan />} />
         <Route path="kalendar" element={<Kalendar />} />
         <Route path="vysledky" element={<Vysledky />} />
         <Route path="profil" element={<Profil />} />

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from './supabase'
-import { useAuth } from './AuthContext'
+import { useAthlete, AthletePicker } from './AthleteContext'
 
 const ACCENT = '#7aa2ff'
 const PRESET_GRADIENTS = [
@@ -51,20 +51,21 @@ export function AvatarView({ avatar, name, size = 88 }) {
 }
 
 export default function Profil() {
-  const { user, profile } = useAuth()
-  const aid = user?.id
-  const meno = `${profile?.meno || ''} ${profile?.priezvisko || ''}`.trim()
+  const { selectedId, selectedAthlete } = useAthlete()
+  const aid = selectedId
+  const meno = `${selectedAthlete?.meno || ''} ${selectedAthlete?.priezvisko || ''}`.trim()
   const [tab, setTab] = useState('udaje')
 
   return (
     <div className="page">
       <h2 className="page-title" style={{ color: ACCENT }}>Profil</h2>
+      <AthletePicker />
       <div className="seg">
         {[['udaje', 'Údaje'], ['avatar', 'Avatar'], ['testy', 'Testy']].map(([k, l]) => (
           <button key={k} className={'segbtn' + (tab === k ? ' on' : '')} style={tab === k ? { background: 'rgba(122,162,255,0.18)', color: ACCENT } : undefined} onClick={() => setTab(k)}>{l}</button>
         ))}
       </div>
-      {tab === 'udaje' && <UdajeView aid={aid} email={user?.email} />}
+      {tab === 'udaje' && <UdajeView aid={aid} email={selectedAthlete?.email} />}
       {tab === 'avatar' && <AvatarPicker aid={aid} meno={meno} />}
       {tab === 'testy' && <TestyView aid={aid} />}
     </div>

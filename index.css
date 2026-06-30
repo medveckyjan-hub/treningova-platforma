@@ -141,3 +141,13 @@ a { color: var(--accent); }
 .b-tr { background: rgba(167,139,250,0.2); color: #a78bfa; }
 .b-sp { background: rgba(52,211,153,0.18); color: #34d399; }
 .addmem { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+
+/* ---- výber hráča ---- */
+.picker { display: flex; align-items: center; gap: 10px; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; margin-bottom: 14px; }
+.picker-l { font-size: 12px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .4px; }
+
+/* ---- Plán / porovnanie ---- */
+.cmp-row { display: grid; grid-template-columns: 1fr 60px 60px; gap: 8px; padding: 7px 0; border-bottom: 1px solid var(--line); font-size: 13px; align-items: center; }
+.cmp-row span:nth-child(2), .cmp-row span:nth-child(3) { text-align: right; font-weight: 700; }
+.cmp-head { color: var(--muted); font-weight: 800; text-transform: uppercase; font-size: 11px; letter-spacing: .3px; }
+.cmp-head span { font-weight: 800 !important; }

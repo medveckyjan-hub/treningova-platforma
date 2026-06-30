@@ -50,6 +50,13 @@ export const User = (p) => (
     <path d="M5.5 20a6.5 6.5 0 0 1 13 0" />
   </Svg>
 )
+export const Target = (p) => (
+  <Svg {...p}>
+    <circle cx="12" cy="12" r="9" />
+    <circle cx="12" cy="12" r="5" />
+    <circle cx="12" cy="12" r="1.4" fill="currentColor" stroke="none" />
+  </Svg>
+)
 export const Settings = (p) => (
   <Svg {...p}>
     <path d="M4 8h16M4 16h16" />
