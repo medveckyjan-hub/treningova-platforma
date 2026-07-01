@@ -70,13 +70,14 @@ export default function Profil() {
       <h2 className="page-title" style={{ color: ACCENT }}>Profil</h2>
       <AthletePicker />
       <div className="seg">
-        {[['udaje', 'Údaje'], ['avatar', 'Avatar'], ['testy', 'Testy']].map(([k, l]) => (
+        {[['udaje', 'Údaje'], ['avatar', 'Avatar'], ['testy', 'Testy'], ['zdravie', 'Zdravie']].map(([k, l]) => (
           <button key={k} className={'segbtn' + (tab === k ? ' on' : '')} style={tab === k ? { background: 'rgba(122,162,255,0.18)', color: ACCENT } : undefined} onClick={() => setTab(k)}>{l}</button>
         ))}
       </div>
       {tab === 'udaje' && <UdajeView aid={aid} email={selectedAthlete?.email} />}
       {tab === 'avatar' && <AvatarPicker aid={aid} meno={meno} />}
       {tab === 'testy' && <TestyView aid={aid} />}
+      {tab === 'zdravie' && <ZdravieView aid={aid} />}
     </div>
   )
 }
@@ -285,6 +286,109 @@ function TestyView({ aid }) {
             {TEST_FIELDS.filter(([k]) => t[k] != null).map(([k, l]) => (
               <span key={k}>{l}: <b>{t[k]}</b></span>
             ))}
+          </div>
+        </div>
+      ))}
+    </>
+  )
+}
+
+
+// ---------- ZDRAVIE ----------
+function ZdravieView({ aid }) {
+  const [obmedzenia, setObmedzenia] = useState('')
+  const [exams, setExams] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [savingO, setSavingO] = useState(false)
+  const [msgO, setMsgO] = useState('')
+  const [d, setD] = useState('')
+  const [pozn, setPozn] = useState('')
+  const [file, setFile] = useState(null)
+  const [uploading, setUploading] = useState(false)
+  const [err, setErr] = useState('')
+
+  useEffect(() => {
+    if (!aid) return
+    let alive = true
+    ;(async () => {
+      setLoading(true)
+      const { data: ap } = await supabase.from('athlete_profile').select('zdravotne_obmedzenia').eq('profile_id', aid).maybeSingle()
+      const { data: ex } = await supabase.from('medical_exams').select('*').eq('athlete_id', aid).order('d', { ascending: false })
+      if (!alive) return
+      setObmedzenia(ap?.zdravotne_obmedzenia || '')
+      setExams(ex || [])
+      setLoading(false)
+    })()
+    return () => { alive = false }
+  }, [aid])
+
+  const saveObmedzenia = async () => {
+    setSavingO(true); setMsgO('')
+    const { error } = await supabase.from('athlete_profile').upsert({ profile_id: aid, zdravotne_obmedzenia: obmedzenia || null })
+    setSavingO(false); setMsgO(error ? 'Chyba' : 'Uložené ✓'); setTimeout(() => setMsgO(''), 1600)
+  }
+
+  const addExam = async () => {
+    setErr('')
+    if (!file) { setErr('Vyber PDF súbor.'); return }
+    setUploading(true)
+    const safe = file.name.replace(/[^\w.\-]+/g, '_')
+    const path = `${aid}/${Date.now()}_${safe}`
+    const { error: upErr } = await supabase.storage.from('lekarske').upload(path, file)
+    if (upErr) { setErr('Nahrávanie zlyhalo: ' + upErr.message); setUploading(false); return }
+    const { data, error } = await supabase.from('medical_exams').insert({ athlete_id: aid, d: d || null, poznamka: pozn || null, file_path: path, file_name: file.name }).select('*').single()
+    setUploading(false)
+    if (error) { setErr('Uloženie záznamu zlyhalo.'); return }
+    setExams((e) => [data, ...e]); setD(''); setPozn(''); setFile(null)
+  }
+
+  const openExam = async (ex) => {
+    if (!ex.file_path) return
+    const { data } = await supabase.storage.from('lekarske').createSignedUrl(ex.file_path, 3600)
+    if (data?.signedUrl) window.open(data.signedUrl, '_blank')
+  }
+  const delExam = async (ex) => {
+    if (ex.file_path) await supabase.storage.from('lekarske').remove([ex.file_path])
+    await supabase.from('medical_exams').delete().eq('id', ex.id)
+    setExams((e) => e.filter((x) => x.id !== ex.id))
+  }
+  const fmtD = (s) => { if (!s) return ''; const [y, m, dd] = s.split('-'); return `${+dd}.${+m}.${y}` }
+
+  if (loading) return <div className="muted" style={{ padding: 20, textAlign: 'center' }}>Načítavam…</div>
+  return (
+    <>
+      <div className="card sk-card">
+        <div className="sk-h">Zdravotné obmedzenia</div>
+        <textarea className="ta" rows={3} value={obmedzenia} onChange={(e) => setObmedzenia(e.target.value)} placeholder="alergie, zranenia, obmedzenia…" />
+        {msgO && <div className="okmsg">{msgO}</div>}
+        <button className="btn" style={{ marginTop: 10 }} onClick={saveObmedzenia} disabled={savingO}>{savingO ? 'Ukladám…' : 'Uložiť'}</button>
+      </div>
+
+      <div className="card sk-card">
+        <div className="sk-h">Lekárska prehliadka (telovýchovné lekárstvo)</div>
+        <div className="muted small" style={{ marginBottom: 10 }}>Absolvuje sa každý rok. Pridaj dátum a nahraj PDF výsledok.</div>
+        <div className="lbl-s">Dátum prehliadky</div>
+        <input className="inp" type="date" value={d} onChange={(e) => setD(e.target.value)} />
+        <div className="lbl-s" style={{ marginTop: 8 }}>Poznámka</div>
+        <input className="inp" value={pozn} onChange={(e) => setPozn(e.target.value)} />
+        <div className="lbl-s" style={{ marginTop: 8 }}>PDF príloha</div>
+        <input type="file" accept="application/pdf" onChange={(e) => setFile(e.target.files?.[0] || null)} />
+        {err && <div className="msg" style={{ marginTop: 8 }}>{err}</div>}
+        <button className="btn" style={{ marginTop: 10 }} onClick={addExam} disabled={uploading}>{uploading ? 'Nahrávam…' : 'Pridať prehliadku'}</button>
+      </div>
+
+      {exams.length === 0 ? <div className="muted" style={{ padding: 8 }}>Zatiaľ žiadne prehliadky.</div> : exams.map((ex) => (
+        <div key={ex.id} className="card sk-card" style={{ padding: 12 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+            <div style={{ minWidth: 0 }}>
+              <div style={{ fontWeight: 800 }}>{fmtD(ex.d) || 'bez dátumu'}</div>
+              {ex.poznamka && <div className="muted small">{ex.poznamka}</div>}
+              {ex.file_name && <div className="muted small" style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{ex.file_name}</div>}
+            </div>
+            <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+              {ex.file_path && <button className="btn-ghost" style={{ padding: '6px 10px' }} onClick={() => openExam(ex)}>PDF</button>}
+              <button className="del" onClick={() => delExam(ex)}>Zmazať</button>
+            </div>
           </div>
         </div>
       ))}

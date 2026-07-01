@@ -22,6 +22,8 @@ const FLAGS = [
   ['dz', 'DZ'], ['nemoc', 'Choroba'], ['zranenie', 'Zranenie'], ['zapasy_flag', 'Zápasy/turnaje'], ['volno', 'Voľno'],
 ]
 const PHASES = ['Dopoludnia', 'Popoludní', 'Večer']
+const PHASE_METRICS = [['objem', 'Objem'], ['intenzita', 'Intenzita'], ['technicka', 'Tech. náročnosť'], ['psychicka', 'Psych. náročnosť']]
+const NUTRITION = [['vyziva_ranajky', 'Raňajky'], ['vyziva_desiata', 'Desiata'], ['vyziva_obed', 'Obed'], ['vyziva_olovrant', 'Olovrant'], ['vyziva_vecera', 'Večera'], ['vyziva_neskora', 'Neskorá večera']]
 
 const pad = (n) => String(n).padStart(2, '0')
 const todayStr = () => { const d = new Date(); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}` }
@@ -57,7 +59,7 @@ export default function Skutocnost() {
 function DenView({ aid, day, setDay }) {
   const { athletes } = useAthlete()
   const [form, setForm] = useState({})
-  const [phases, setPhases] = useState(['', '', ''])
+  const [phases, setPhases] = useState([{}, {}, {}])
   const [existingId, setExistingId] = useState(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -81,16 +83,19 @@ function DenView({ aid, day, setDay }) {
       const b = {}
       ALL_MIN.forEach(([k]) => (b[k] = row?.[k] ?? ''))
       FLAGS.forEach(([k]) => (b[k] = row?.[k] ?? false))
+      NUTRITION.forEach(([k]) => (b[k] = row?.[k] || ''))
       b.tj = row?.tj ?? ''
       b.cestovanie_min = row?.cestovanie_min ?? ''
       b.zapasy_sety = row?.zapasy_sety ?? ''
       b.motiv = row?.motiv || ''
       b.poznamky = row?.poznamky || ''
+      b.spanok_kvalita = row?.spanok_kvalita ?? ''
+      b.spanok_hodiny = row?.spanok_hodiny ?? ''
       setForm(b)
-      let ph = ['', '', '']
+      let ph = [{}, {}, {}]
       if (row?.id) {
         const { data: pr } = await supabase.from('training_phase').select('*').eq('day_id', row.id)
-        ;(pr || []).forEach((p) => { if (p.phase >= 1 && p.phase <= 3) ph[p.phase - 1] = p.text || '' })
+        ;(pr || []).forEach((p) => { if (p.phase >= 1 && p.phase <= 3) ph[p.phase - 1] = { text: p.text || '', objem: p.objem || '', intenzita: p.intenzita || '', technicka: p.technicka || '', psychicka: p.psychicka || '' } })
       }
       setPhases(ph); setLoading(false)
     })()
@@ -101,17 +106,24 @@ function DenView({ aid, day, setDay }) {
 
   const navDay = (n) => { const d = new Date(day); d.setDate(d.getDate() + n); setDay(`${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`) }
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }))
+  const setPhase = (i, field, v) => setPhases((arr) => arr.map((x, j) => (j === i ? { ...x, [field]: v } : x)))
   const stCelkom = ST_FIELDS.reduce((s, [k]) => s + (+form[k] || 0), 0)
   const kondCelkom = KOND_FIELDS.reduce((s, [k]) => s + (+form[k] || 0), 0)
   const hzCelkom = ALL_MIN.reduce((s, [k]) => s + (+form[k] || 0), 0)
 
   const basePayload = () => {
     const p = { kind: 'skutocnost', motiv: form.motiv || null, poznamky: form.poznamky || null,
-      tj: +form.tj || 0, cestovanie_min: +form.cestovanie_min || 0, zapasy_sety: +form.zapasy_sety || 0 }
+      tj: +form.tj || 0, cestovanie_min: +form.cestovanie_min || 0, zapasy_sety: +form.zapasy_sety || 0,
+      spanok_kvalita: form.spanok_kvalita === '' ? null : +form.spanok_kvalita,
+      spanok_hodiny: form.spanok_hodiny === '' ? null : +form.spanok_hodiny }
     ALL_MIN.forEach(([k]) => (p[k] = +form[k] || 0))
     FLAGS.forEach(([k]) => (p[k] = !!form[k]))
+    NUTRITION.forEach(([k]) => (p[k] = form[k] || null))
     return p
   }
+  const phaseRows = (dayId) => phases
+    .map((p, i) => ({ day_id: dayId, phase: i + 1, text: p.text || null, objem: p.objem || null, intenzita: p.intenzita || null, technicka: p.technicka || null, psychicka: p.psychicka || null }))
+    .filter((p) => p.text || p.objem || p.intenzita || p.technicka || p.psychicka)
 
   const writeDay = async (tid, tdate) => {
     const payload = { ...basePayload(), athlete_id: tid, d: tdate }
@@ -121,7 +133,7 @@ function DenView({ aid, day, setDay }) {
     else { const { data } = await supabase.from('training_day').insert(payload).select('id').single(); id = data?.id }
     if (id) {
       await supabase.from('training_phase').delete().eq('day_id', id)
-      const ins = phases.map((t, i) => ({ day_id: id, phase: i + 1, text: t || null })).filter((p) => p.text)
+      const ins = phaseRows(id)
       if (ins.length) await supabase.from('training_phase').insert(ins)
     }
     return id
@@ -170,17 +182,48 @@ function DenView({ aid, day, setDay }) {
       <div className="card sk-card">
         <div className="sk-h">Záznam tréningu</div>
         {PHASES.map((p, i) => (
-          <div key={p} style={{ marginBottom: 8 }}>
-            <div className="lbl-s">{p}</div>
-            <textarea className="ta" rows={2} value={phases[i]}
-              onChange={(e) => setPhases((arr) => arr.map((x, j) => (j === i ? e.target.value : x)))}
+          <div key={p} className="phase-block">
+            <div className="lbl-s" style={{ fontWeight: 700, color: 'var(--accent2)' }}>{p}</div>
+            <textarea className="ta" rows={2} value={phases[i]?.text || ''}
+              onChange={(e) => setPhase(i, 'text', e.target.value)}
               placeholder="čo sa robilo / miesto / pocity…" />
+            <div className="metrics">
+              {PHASE_METRICS.map(([mk, ml]) => (
+                <div key={mk} className="metric">
+                  <label className="lbl-s" style={{ marginBottom: 3 }}>{ml}</label>
+                  <input className="inp" value={phases[i]?.[mk] || ''} onChange={(e) => setPhase(i, mk, e.target.value)} />
+                </div>
+              ))}
+            </div>
           </div>
         ))}
         <div className="lbl-s" style={{ marginTop: 6 }}>Motív dňa</div>
         <input className="inp" value={form.motiv} onChange={(e) => set('motiv', e.target.value)} />
         <div className="lbl-s" style={{ marginTop: 10 }}>Poznámky a pocity</div>
         <textarea className="ta" rows={2} value={form.poznamky} onChange={(e) => set('poznamky', e.target.value)} />
+      </div>
+
+      <div className="card sk-card">
+        <div className="sk-h">Výživa</div>
+        {NUTRITION.map(([k, l]) => (
+          <div key={k} style={{ marginBottom: 8 }}>
+            <div className="lbl-s">{l}</div>
+            <input className="inp" value={form[k] || ''} onChange={(e) => set(k, e.target.value)} />
+          </div>
+        ))}
+      </div>
+
+      <div className="card sk-card">
+        <div className="sk-h">Spánok (z predošlej noci)</div>
+        <div className="lbl-s">Kvalita spánku</div>
+        <div className="flags" style={{ marginBottom: 4 }}>
+          {[1, 2, 3, 4, 5].map((n) => (
+            <button key={n} className={'flag' + (+form.spanok_kvalita === n ? ' on' : '')} onClick={() => set('spanok_kvalita', n)} style={{ minWidth: 40 }}>{n}</button>
+          ))}
+        </div>
+        <div className="muted small" style={{ marginBottom: 10 }}>1 = výborné · 5 = veľmi zlé</div>
+        <div className="lbl-s">Počet hodín spánku</div>
+        <input className="inp" type="number" step="0.5" inputMode="decimal" value={form.spanok_hodiny ?? ''} onChange={(e) => set('spanok_hodiny', e.target.value)} />
       </div>
 
       <div className="card sk-card">
@@ -216,7 +259,7 @@ function DenView({ aid, day, setDay }) {
       </button>
       {copyOpen && (
         <div className="card sk-card" style={{ marginTop: 10 }}>
-          <div className="muted small" style={{ marginBottom: 10 }}>Skopíruje aktuálne hodnoty (fázy, pocity aj čísla) na zvolený dátum a hráčov.</div>
+          <div className="muted small" style={{ marginBottom: 10 }}>Skopíruje aktuálne hodnoty (fázy, výživa, spánok aj čísla) na zvolený dátum a hráčov.</div>
           <div className="lbl-s">Dátum</div>
           <input type="date" className="inp" value={copyDate} onChange={(e) => setCopyDate(e.target.value)} />
           {athletes.length > 0 ? (

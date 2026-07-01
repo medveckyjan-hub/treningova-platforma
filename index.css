@@ -212,3 +212,9 @@ a { color: var(--accent); }
   .page-title { display: none; }
   @page { size: A4; margin: 14mm; }
 }
+
+/* ---- fázy: metriky + výživa ---- */
+.phase-block { padding-bottom: 12px; margin-bottom: 12px; border-bottom: 1px solid var(--line); }
+.phase-block:last-of-type { border-bottom: none; }
+.metrics { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
+.metric label { display: block; }
