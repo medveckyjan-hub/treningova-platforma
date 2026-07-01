@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from './supabase'
 import { useAthlete, AthletePicker } from './AthleteContext'
+import { useAuth } from './AuthContext'
 import av1 from './av1.png'
 import av2 from './av2.png'
 import av3 from './av3.png'
@@ -13,7 +14,10 @@ import av9 from './av9.png'
 import av10 from './av10.png'
 import av11 from './av11.png'
 import av12 from './av12.png'
-const PRESET_IMAGES = [av1, av2, av3, av4, av5, av6, av7, av8, av9, av10, av11, av12]
+import av13 from './av13.png'
+import av14 from './av14.png'
+import av15 from './av15.png'
+const PRESET_IMAGES = [av1, av2, av3, av4, av5, av6, av7, av8, av9, av10, av11, av12, av13, av14, av15]
 
 const ACCENT = '#7aa2ff'
 const PRESET_GRADIENTS = [
