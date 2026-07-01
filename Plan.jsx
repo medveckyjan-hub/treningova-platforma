@@ -10,12 +10,13 @@ const ST_FIELDS = [
   ['herkombi_nepra', 'Herné kombinácie nepravidelné'],
   ['herkombi_nepra_servis', 'Herné kombinácie nepravidelné so servisom'],
   ['zasobnik', 'Zásobník'],
-  ['podanie_prijem', 'Podanie a príjem'],
+  ['podanie', 'Podanie'],
+  ['prijem', 'Príjem podania'],
   ['treningove_sety', 'Tréningové sety'],
   ['zapasy_cas_min', 'Zápasy/turnaje (čas)'],
 ]
 const KOND_FIELDS = [['kondicia', 'Kondícia'], ['posilnovanie', 'Posilňovanie'], ['specialna_priprava', 'Špeciálna príprava'], ['specificka_priprava', 'Špecifická príprava']]
-const OTHER_FIELDS = [['regeneracia', 'Regenerácia'], ['kompenzacia', 'Kompenzácia a strečing'], ['taktika', 'Taktika'], ['psychologia', 'Psychológia']]
+const OTHER_FIELDS = [['regeneracia', 'Regenerácia'], ['kompenzacia', 'Kompenzácia a strečing'], ['taktika', 'Taktika'], ['psychologia', 'Psychológia'], ['videoanaliza', 'Videoanalýza']]
 const ALL_MIN = [...ST_FIELDS, ...KOND_FIELDS, ...OTHER_FIELDS]
 const hzOf = (r) => ALL_MIN.reduce((s, [k]) => s + (+r[k] || 0), 0)
 const PHASES = ['Dopoludnia', 'Popoludní', 'Večer']

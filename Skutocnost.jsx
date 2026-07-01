@@ -9,12 +9,13 @@ const ST_FIELDS = [
   ['herkombi_nepra', 'Herné kombinácie nepravidelné'],
   ['herkombi_nepra_servis', 'Herné kombinácie nepravidelné so servisom'],
   ['zasobnik', 'Zásobník'],
-  ['podanie_prijem', 'Podanie a príjem'],
+  ['podanie', 'Podanie'],
+  ['prijem', 'Príjem podania'],
   ['treningove_sety', 'Tréningové sety'],
   ['zapasy_cas_min', 'Zápasy/turnaje (čas)'],
 ]
 const KOND_FIELDS = [['kondicia', 'Kondícia'], ['posilnovanie', 'Posilňovanie'], ['specialna_priprava', 'Špeciálna príprava'], ['specificka_priprava', 'Špecifická príprava']]
-const OTHER_FIELDS = [['regeneracia', 'Regenerácia'], ['kompenzacia', 'Kompenzácia a strečing'], ['taktika', 'Taktika'], ['psychologia', 'Psychológia']]
+const OTHER_FIELDS = [['regeneracia', 'Regenerácia'], ['kompenzacia', 'Kompenzácia a strečing'], ['taktika', 'Taktika'], ['psychologia', 'Psychológia'], ['videoanaliza', 'Videoanalýza']]
 const ALL_MIN = [...ST_FIELDS, ...KOND_FIELDS, ...OTHER_FIELDS]
 const hzOf = (r) => ALL_MIN.reduce((s, [k]) => s + (+r[k] || 0), 0)
 const FLAGS = [
@@ -399,11 +400,23 @@ function ObdobieView({ aid }) {
             <span>HZ celkom za obdobie</span><strong>{fmtMin(totHz)}</strong>
           </div>
           <div className="card sk-card">
-            <div className="sk-h">Súčet po činnostiach</div>
-            {ALL_MIN.map(([k, l]) => (
-              <div key={k} className="sumrow"><span>{l}</span><span>{fmtMin(sum(k))}</span></div>
-            ))}
-            <div className="sumrow"><span>Dni zaťaženia (DZ)</span><span>{totDz}</span></div>
+            <div className="sk-h">Rozpad po činnostiach</div>
+            {(() => {
+              const vals = ALL_MIN.map(([k, l]) => [l, sum(k)]).filter((v) => v[1] > 0)
+              const mx = Math.max(1, ...vals.map((v) => v[1]))
+              const tot = vals.reduce((s2, v) => s2 + v[1], 0) || 1
+              if (!vals.length) return <div className="muted small">Žiadne dáta za obdobie.</div>
+              return vals.map(([l, v]) => (
+                <div key={l} style={{ marginBottom: 9 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, marginBottom: 3 }}>
+                    <span>{l}</span>
+                    <span style={{ fontWeight: 700 }}>{fmtMin(v)} · {Math.round((v / tot) * 100)}%</span>
+                  </div>
+                  <div className="bar-track"><div className="bar-fill" style={{ width: `${(v / mx) * 100}%`, background: '#34d399' }} /></div>
+                </div>
+              ))
+            })()}
+            <div className="sumrow" style={{ marginTop: 8 }}><span>Dni zaťaženia (DZ)</span><span>{totDz}</span></div>
             <div className="sumrow" style={{ borderBottom: 'none' }}><span>Tréningové jednotky (TJ)</span><span>{totTj}</span></div>
           </div>
           {monthKeys.length > 1 && (

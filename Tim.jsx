@@ -6,7 +6,7 @@ import { useAthlete } from './AthleteContext'
 import { AvatarView } from './Profil'
 
 const ACCENT = '#38bdf8'
-const MIN_KEYS = ['herkombi_pra', 'herkombi_pra_servis', 'herkombi_nepra', 'herkombi_nepra_servis', 'zasobnik', 'podanie_prijem', 'treningove_sety', 'zapasy_cas_min', 'kondicia', 'posilnovanie', 'specialna_priprava', 'specificka_priprava', 'regeneracia', 'kompenzacia', 'taktika', 'psychologia']
+const MIN_KEYS = ['herkombi_pra', 'herkombi_pra_servis', 'herkombi_nepra', 'herkombi_nepra_servis', 'zasobnik', 'podanie', 'prijem', 'treningove_sety', 'zapasy_cas_min', 'kondicia', 'posilnovanie', 'specialna_priprava', 'specificka_priprava', 'regeneracia', 'kompenzacia', 'taktika', 'psychologia', 'videoanaliza']
 const hzOf = (r) => MIN_KEYS.reduce((s, k) => s + (+r[k] || 0), 0)
 const pad = (n) => String(n).padStart(2, '0')
 const todayStr = () => { const d = new Date(); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}` }
@@ -14,7 +14,7 @@ const firstOfMonth = () => { const d = new Date(); return `${d.getFullYear()}-${
 const fmtMin = (m) => { m = Math.round(+m || 0); const h = Math.floor(m / 60), mm = m % 60; return h > 0 ? `${h} h ${mm} min` : `${mm} min` }
 const nameOf = (a) => `${a?.meno || ''} ${a?.priezvisko || ''}`.trim() || a?.email || '—'
 
-export default function Tim() {
+export default function Tim({ embedded } = {}) {
   const { role } = useAuth()
   const { athletes, setSelectedId } = useAthlete()
   const nav = useNavigate()
@@ -60,7 +60,7 @@ export default function Tim() {
 
   return (
     <div className="page">
-      <h2 className="page-title" style={{ color: ACCENT }}>Tím</h2>
+      {!embedded && <h2 className="page-title" style={{ color: ACCENT }}>Tím</h2>}
 
       <div className="card sk-card">
         <div className="period">

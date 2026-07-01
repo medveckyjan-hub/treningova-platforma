@@ -6,7 +6,7 @@ import logo from './logo.png'
 const NAV = [
   { to: '/', label: 'Skutočnosť', Icon: Clipboard, color: '#34d399', roles: ['sportovec', 'trener', 'rodic', 'admin'] },
   { to: '/plan', label: 'Plán', Icon: Target, color: '#f87171', roles: ['trener', 'admin'] },
-  { to: '/tim', label: 'Tím', Icon: Users, color: '#38bdf8', roles: ['trener', 'admin'] },
+  { to: '/trener', label: 'Tréner', Icon: Users, color: '#38bdf8', roles: ['trener', 'admin'] },
   { to: '/vysledky', label: 'Výsledky', Icon: Trophy, color: '#f0b429', roles: ['sportovec', 'trener', 'rodic', 'admin'] },
   { to: '/profil', label: 'Profil', Icon: User, color: '#7aa2ff', roles: ['sportovec', 'trener', 'rodic', 'admin'] },
   { to: '/nastavenia', label: 'Nastavenia', Icon: Settings, color: '#a78bfa', roles: ['admin', 'trener'] },
