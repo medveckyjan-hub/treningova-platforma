@@ -31,9 +31,13 @@ export default function Nastavenia() {
         <button className={'segbtn' + (tab === 'groups' ? ' on' : '')}
           style={tab === 'groups' ? { background: 'rgba(167,139,250,0.18)', color: ACCENT } : undefined}
           onClick={() => setTab('groups')}>Skupiny</button>
+        <button className={'segbtn' + (tab === 'pozvanky' ? ' on' : '')}
+          style={tab === 'pozvanky' ? { background: 'rgba(167,139,250,0.18)', color: ACCENT } : undefined}
+          onClick={() => setTab('pozvanky')}>Pozvánky</button>
       </div>
       {tab === 'users' && role === 'admin' && <UsersAdmin />}
       {tab === 'groups' && <GroupsAdmin />}
+      {tab === 'pozvanky' && <InvitesAdmin />}
     </div>
   )
 }
@@ -168,5 +172,82 @@ function GroupCard({ group, users, members, onChange }) {
         <button className="btn" style={{ width: 'auto', padding: '0 14px' }} onClick={add} disabled={!addId}>Pridať</button>
       </div>
     </div>
+  )
+}
+
+
+// ---------- POZVÁNKY ----------
+function InvitesAdmin() {
+  const { user } = useAuth()
+  const [invites, setInvites] = useState([])
+  const [groups, setGroups] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [email, setEmail] = useState('')
+  const [role, setRole] = useState('sportovec')
+  const [groupId, setGroupId] = useState('')
+  const [saving, setSaving] = useState(false)
+
+  const load = async () => {
+    const [iv, g] = await Promise.all([
+      supabase.from('invitations').select('*').order('created_at', { ascending: false }),
+      supabase.from('groups').select('*').order('name'),
+    ])
+    setInvites(iv.data || []); setGroups(g.data || []); setLoading(false)
+  }
+  useEffect(() => { load() }, [])
+
+  const add = async () => {
+    if (!email.trim()) return
+    setSaving(true)
+    const { data, error } = await supabase.from('invitations').insert({
+      email: email.trim().toLowerCase(), account_type: role, group_id: groupId || null, invited_by: user?.id,
+    }).select('*').single()
+    setSaving(false)
+    if (!error) { setInvites((x) => [data, ...x]); setEmail(''); setGroupId('') }
+  }
+  const del = async (id) => { await supabase.from('invitations').delete().eq('id', id); setInvites((x) => x.filter((i) => i.id !== id)) }
+  const gName = (id) => groups.find((g) => g.id === id)?.name || ''
+  const rLabel = (v) => ROLES.find((r) => r[0] === v)?.[1] || v
+
+  if (loading) return <div className="muted" style={{ padding: 20, textAlign: 'center' }}>Načítavam…</div>
+  return (
+    <>
+      <div className="card sk-card">
+        <div className="sk-h">Nová pozvánka</div>
+        <div className="lbl-s">E-mail hráča / trénera</div>
+        <input className="inp" type="email" placeholder="email@..." value={email} onChange={(e) => setEmail(e.target.value)} />
+        <div className="row2" style={{ marginTop: 8 }}>
+          <div className="numbox"><label className="lbl-s">Rola</label>
+            <select className="selbox" value={role} onChange={(e) => setRole(e.target.value)}>
+              <option value="sportovec">Športovec</option>
+              <option value="trener">Tréner</option>
+              <option value="rodic">Rodič</option>
+            </select></div>
+          <div className="numbox"><label className="lbl-s">Skupina (voliteľné)</label>
+            <select className="selbox" value={groupId} onChange={(e) => setGroupId(e.target.value)}>
+              <option value="">— bez skupiny —</option>
+              {groups.map((g) => <option key={g.id} value={g.id}>{g.name}</option>)}
+            </select></div>
+        </div>
+        <button className="btn" style={{ marginTop: 12 }} onClick={add} disabled={saving}>{saving ? 'Ukladám…' : 'Vytvoriť pozvánku'}</button>
+        <div className="muted small" style={{ marginTop: 10 }}>Pošli osobe pokyn, nech sa zaregistruje presne s týmto e-mailom cez „Dokončiť registráciu". Rola a skupina sa jej priradia automaticky.</div>
+      </div>
+
+      {invites.length === 0 ? <div className="muted" style={{ padding: 8 }}>Žiadne pozvánky.</div> : invites.map((iv) => (
+        <div key={iv.id} className="card sk-card" style={{ padding: 12, opacity: iv.used ? 0.55 : 1 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+            <div style={{ minWidth: 0 }}>
+              <div style={{ fontWeight: 700 }}>{iv.email}</div>
+              <div className="res-meta">
+                <span className="res-badge">{rLabel(iv.account_type)}</span>
+                {iv.group_id && <span>{gName(iv.group_id)}</span>}
+                <span>{iv.used ? '✓ použitá' : 'čaká'}</span>
+              </div>
+            </div>
+            <button className="del" onClick={() => del(iv.id)}>Zmazať</button>
+          </div>
+        </div>
+      ))}
+    </>
   )
 }

@@ -1,4 +1,4 @@
-import logo from './logo.png'
+import logo from './logo_full.png'
 import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { supabase } from './supabase'
@@ -29,7 +29,7 @@ export default function Login() {
   return (
     <div className="authwrap">
       <form className="card authcard" onSubmit={submit}>
-        <img src={logo} alt="TDtopspin" className="logo-img" />
+        <img src={logo} alt="TDtopspin" className="logo-full" />
         <h1>TDtopspin</h1>
         <p className="muted">Prihlásenie</p>
         <input className="inp" type="email" placeholder="E-mail" value={email}

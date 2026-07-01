@@ -1,6 +1,19 @@
 import { useState, useEffect } from 'react'
 import { supabase } from './supabase'
 import { useAthlete, AthletePicker } from './AthleteContext'
+import av1 from './av1.png'
+import av2 from './av2.png'
+import av3 from './av3.png'
+import av4 from './av4.png'
+import av5 from './av5.png'
+import av6 from './av6.png'
+import av7 from './av7.png'
+import av8 from './av8.png'
+import av9 from './av9.png'
+import av10 from './av10.png'
+import av11 from './av11.png'
+import av12 from './av12.png'
+const PRESET_IMAGES = [av1, av2, av3, av4, av5, av6, av7, av8, av9, av10, av11, av12]
 
 const ACCENT = '#7aa2ff'
 const PRESET_GRADIENTS = [
@@ -48,10 +61,8 @@ export function AvatarView({ avatar, name, size = 88 }) {
   const ini = initials(name)
   if (avatar && avatar.startsWith('preset:')) {
     const n = +avatar.split(':')[1] || 1
-    const [a, b] = PRESET_GRADIENTS[(n - 1) % PRESET_GRADIENTS.length]
-    return (
-      <div className="avatar" style={{ width: size, height: size, background: `linear-gradient(135deg, ${a}, ${b})`, color: '#fff', fontWeight: 800, fontSize: size * 0.38 }}>{ini}</div>
-    )
+    const src = PRESET_IMAGES[(n - 1) % PRESET_IMAGES.length]
+    return <img className="avatar" src={src} style={{ width: size, height: size, objectFit: 'cover' }} alt="" />
   }
   if (avatar) return <img className="avatar" src={avatar} style={{ width: size, height: size, objectFit: 'cover' }} alt="" />
   return (
@@ -70,13 +81,14 @@ export default function Profil() {
       <h2 className="page-title" style={{ color: ACCENT }}>Profil</h2>
       <AthletePicker />
       <div className="seg">
-        {[['udaje', 'Údaje'], ['avatar', 'Avatar'], ['testy', 'Testy'], ['zdravie', 'Zdravie']].map(([k, l]) => (
+        {[['udaje', 'Údaje'], ['avatar', 'Avatar'], ['testy', 'Testy'], ['ciele', 'Ciele'], ['zdravie', 'Zdravie']].map(([k, l]) => (
           <button key={k} className={'segbtn' + (tab === k ? ' on' : '')} style={tab === k ? { background: 'rgba(122,162,255,0.18)', color: ACCENT } : undefined} onClick={() => setTab(k)}>{l}</button>
         ))}
       </div>
       {tab === 'udaje' && <UdajeView aid={aid} email={selectedAthlete?.email} />}
       {tab === 'avatar' && <AvatarPicker aid={aid} meno={meno} />}
       {tab === 'testy' && <TestyView aid={aid} />}
+      {tab === 'ciele' && <CieleView aid={aid} />}
       {tab === 'zdravie' && <ZdravieView aid={aid} />}
     </div>
   )
@@ -209,7 +221,7 @@ function AvatarPicker({ aid, meno }) {
       <div className="card sk-card">
         <div className="sk-h">Alebo vyber z prednastavených</div>
         <div className="avgrid">
-          {PRESET_GRADIENTS.map((c, i) => (
+          {PRESET_IMAGES.map((c, i) => (
             <button key={i} className={'avopt' + (avatar === `preset:${i + 1}` ? ' on' : '')} onClick={() => saveAvatar(`preset:${i + 1}`)}>
               <AvatarView avatar={`preset:${i + 1}`} name={meno} size={54} />
             </button>
@@ -388,6 +400,77 @@ function ZdravieView({ aid }) {
             <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
               {ex.file_path && <button className="btn-ghost" style={{ padding: '6px 10px' }} onClick={() => openExam(ex)}>PDF</button>}
               <button className="del" onClick={() => delExam(ex)}>Zmazať</button>
+            </div>
+          </div>
+        </div>
+      ))}
+    </>
+  )
+}
+
+
+// ---------- CIELE ----------
+function CieleView({ aid }) {
+  const { user } = useAuth()
+  const [goals, setGoals] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [open, setOpen] = useState(false)
+  const [f, setF] = useState({ title: '', popis: '', target: '', deadline: '' })
+  const [saving, setSaving] = useState(false)
+
+  useEffect(() => {
+    if (!aid) return
+    supabase.from('goals').select('*').eq('athlete_id', aid).order('done').order('deadline', { nullsFirst: false })
+      .then(({ data }) => { setGoals(data || []); setLoading(false) })
+  }, [aid])
+
+  const set = (k, v) => setF((x) => ({ ...x, [k]: v }))
+  const add = async () => {
+    if (!f.title.trim()) return
+    setSaving(true)
+    const { data, error } = await supabase.from('goals').insert({
+      athlete_id: aid, title: f.title, popis: f.popis || null, target: f.target || null,
+      deadline: f.deadline || null, created_by: user?.id,
+    }).select('*').single()
+    setSaving(false)
+    if (!error) { setGoals((g) => [data, ...g]); setF({ title: '', popis: '', target: '', deadline: '' }); setOpen(false) }
+  }
+  const toggle = async (g) => { await supabase.from('goals').update({ done: !g.done }).eq('id', g.id); setGoals((gs) => gs.map((x) => x.id === g.id ? { ...x, done: !x.done } : x)) }
+  const del = async (id) => { await supabase.from('goals').delete().eq('id', id); setGoals((gs) => gs.filter((x) => x.id !== id)) }
+  const fmtD = (s) => { if (!s) return ''; const [y, m, d] = s.split('-'); return `${+d}.${+m}.${y}` }
+
+  if (loading) return <div className="muted" style={{ padding: 20, textAlign: 'center' }}>Načítavam…</div>
+  return (
+    <>
+      <button className="btn" style={{ marginBottom: 12 }} onClick={() => setOpen((o) => !o)}>{open ? 'Zrušiť' : '+ Pridať cieľ'}</button>
+      {open && (
+        <div className="card sk-card">
+          <div className="lbl-s">Cieľ</div>
+          <input className="inp" placeholder="napr. Zlepšiť bekhend topspin" value={f.title} onChange={(e) => set('title', e.target.value)} />
+          <div className="lbl-s" style={{ marginTop: 8 }}>Popis</div>
+          <textarea className="ta" rows={2} value={f.popis} onChange={(e) => set('popis', e.target.value)} />
+          <div className="row2" style={{ marginTop: 8 }}>
+            <div className="numbox"><label className="lbl-s">Cieľová hodnota</label><input className="inp" placeholder="napr. 40 h/mes." value={f.target} onChange={(e) => set('target', e.target.value)} /></div>
+            <div className="numbox"><label className="lbl-s">Termín</label><input className="inp" type="date" value={f.deadline} onChange={(e) => set('deadline', e.target.value)} /></div>
+          </div>
+          <button className="btn" style={{ marginTop: 12 }} onClick={add} disabled={saving}>{saving ? 'Ukladám…' : 'Uložiť cieľ'}</button>
+        </div>
+      )}
+      {goals.length === 0 && <div className="muted" style={{ padding: 8 }}>Zatiaľ žiadne ciele.</div>}
+      {goals.map((g) => (
+        <div key={g.id} className="card sk-card" style={{ opacity: g.done ? 0.6 : 1 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
+            <div style={{ minWidth: 0 }}>
+              <div style={{ fontWeight: 800, textDecoration: g.done ? 'line-through' : 'none' }}>{g.title}</div>
+              {g.popis && <div className="muted small">{g.popis}</div>}
+              <div className="res-meta">
+                {g.target && <span className="res-badge">{g.target}</span>}
+                {g.deadline && <span>do {fmtD(g.deadline)}</span>}
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+              <button className="btn-ghost" style={{ padding: '6px 10px' }} onClick={() => toggle(g)}>{g.done ? '↩' : '✓'}</button>
+              <button className="del" onClick={() => del(g.id)}>Zmazať</button>
             </div>
           </div>
         </div>

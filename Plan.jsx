@@ -20,6 +20,7 @@ const OTHER_FIELDS = [['regeneracia', 'Regenerácia'], ['kompenzacia', 'Kompenz�
 const ALL_MIN = [...ST_FIELDS, ...KOND_FIELDS, ...OTHER_FIELDS]
 const hzOf = (r) => ALL_MIN.reduce((s, [k]) => s + (+r[k] || 0), 0)
 const PHASES = ['Dopoludnia', 'Popoludní', 'Večer']
+const PHASE_METRICS = [['objem', 'Objem'], ['intenzita', 'Intenzita'], ['technicka', 'Tech. náročnosť'], ['psychicka', 'Psych. náročnosť']]
 const pad = (n) => String(n).padStart(2, '0')
 const todayStr = () => { const d = new Date(); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}` }
 const fmtMin = (m) => { m = Math.round(+m || 0); const h = Math.floor(m / 60), mm = m % 60; return h > 0 ? `${h} h ${mm} min` : `${mm} min` }
@@ -29,8 +30,43 @@ const WD = ['Ne', 'Po', 'Ut', 'St', 'Št', 'Pi', 'So']
 export default function Plan() {
   const { role } = useAuth()
   const { selectedId } = useAthlete()
-  const aid = selectedId
   const [tab, setTab] = useState('plan')
+  const [mode, setMode] = useState('hrac')
+  const [groups, setGroups] = useState([])
+  const [groupId, setGroupId] = useState('')
+  const [members, setMembers] = useState([])
+
+  useEffect(() => {
+    if (role !== 'trener' && role !== 'admin') return
+    let alive = true
+    ;(async () => {
+      let gs = []
+      if (role === 'admin') {
+        const { data } = await supabase.from('groups').select('*').order('name')
+        gs = data || []
+      } else {
+        const { data: mine } = await supabase.from('group_members').select('group_id').eq('profile_id', selectedIdSafe()).eq('role', 'trener')
+        const ids = [...new Set((mine || []).map((x) => x.group_id))]
+        if (ids.length) { const { data } = await supabase.from('groups').select('*').in('id', ids).order('name'); gs = data || [] }
+      }
+      if (alive) setGroups(gs)
+    })()
+    return () => { alive = false }
+    function selectedIdSafe() { return selectedId }
+  }, [role])
+
+  useEffect(() => {
+    if (!groupId) { setMembers([]); return }
+    let alive = true
+    ;(async () => {
+      const { data: gm } = await supabase.from('group_members').select('profile_id').eq('group_id', groupId).eq('role', 'sportovec')
+      const ids = [...new Set((gm || []).map((x) => x.profile_id))]
+      if (!ids.length) { if (alive) setMembers([]); return }
+      const { data: ps } = await supabase.from('profiles').select('id, meno, priezvisko, email').in('id', ids).order('priezvisko')
+      if (alive) setMembers(ps || [])
+    })()
+    return () => { alive = false }
+  }, [groupId])
 
   if (role !== 'trener' && role !== 'admin')
     return (
@@ -40,10 +76,29 @@ export default function Plan() {
       </div>
     )
 
+  const targets = mode === 'skupina' ? members.map((m) => m.id) : [selectedId]
+  const aidForLoad = mode === 'skupina' ? (members[0]?.id || null) : selectedId
+
   return (
     <div className="page">
       <h2 className="page-title" style={{ color: ACCENT }}>Plán</h2>
-      <AthletePicker />
+
+      <div className="seg" style={{ marginBottom: 12 }}>
+        <button className={'segbtn' + (mode === 'hrac' ? ' on' : '')} style={mode === 'hrac' ? { background: 'rgba(248,113,113,0.18)', color: ACCENT } : undefined} onClick={() => setMode('hrac')}>Hráč</button>
+        <button className={'segbtn' + (mode === 'skupina' ? ' on' : '')} style={mode === 'skupina' ? { background: 'rgba(248,113,113,0.18)', color: ACCENT } : undefined} onClick={() => setMode('skupina')}>Skupina</button>
+      </div>
+
+      {mode === 'hrac' ? <AthletePicker /> : (
+        <div className="picker">
+          <span className="picker-l">Skupina</span>
+          <select className="selbox" style={{ flex: 1 }} value={groupId} onChange={(e) => setGroupId(e.target.value)}>
+            <option value="">— vyber skupinu —</option>
+            {groups.map((g) => <option key={g.id} value={g.id}>{g.name}</option>)}
+          </select>
+        </div>
+      )}
+      {mode === 'skupina' && groupId && <div className="muted small" style={{ marginBottom: 12 }}>Plán sa uloží {members.length} hráčom v skupine.</div>}
+
       <div className="seg">
         {[['plan', 'Denný plán'], ['porovnanie', 'Plán vs Skutočnosť']].map(([k, l]) => (
           <button key={k} className={'segbtn' + (tab === k ? ' on' : '')}
@@ -51,18 +106,21 @@ export default function Plan() {
             onClick={() => setTab(k)}>{l}</button>
         ))}
       </div>
-      {tab === 'plan' && <PlanDay aid={aid} />}
-      {tab === 'porovnanie' && <Compare aid={aid} />}
+
+      {tab === 'plan' && (mode === 'skupina' && !groupId
+        ? <div className="card placeholder">Vyber skupinu, ktorej chceš zadať plán.</div>
+        : <PlanDay aid={aidForLoad} targets={targets} groupMode={mode === 'skupina'} groupCount={members.length} />)}
+      {tab === 'porovnanie' && <Compare aid={aidForLoad} />}
     </div>
   )
 }
 
 // ---------- DENNÝ PLÁN ----------
-function PlanDay({ aid }) {
+function PlanDay({ aid, targets, groupMode, groupCount }) {
   const { athletes } = useAthlete()
   const [day, setDay] = useState(todayStr())
   const [form, setForm] = useState({})
-  const [phases, setPhases] = useState(['', '', ''])
+  const [phases, setPhases] = useState([{}, {}, {}])
   const [existingId, setExistingId] = useState(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -88,10 +146,10 @@ function PlanDay({ aid }) {
       b.tj = row?.tj ?? ''
       b.motiv = row?.motiv || ''
       setForm(b)
-      let ph = ['', '', '']
+      let ph = [{}, {}, {}]
       if (row?.id) {
         const { data: pr } = await supabase.from('training_phase').select('*').eq('day_id', row.id)
-        ;(pr || []).forEach((p) => { if (p.phase >= 1 && p.phase <= 3) ph[p.phase - 1] = p.text || '' })
+        ;(pr || []).forEach((p) => { if (p.phase >= 1 && p.phase <= 3) ph[p.phase - 1] = { text: p.text || '', objem: p.objem || '', intenzita: p.intenzita || '', technicka: p.technicka || '', psychicka: p.psychicka || '' } })
       }
       setPhases(ph); setLoading(false)
     })()
@@ -102,6 +160,7 @@ function PlanDay({ aid }) {
 
   const navDay = (n) => { const d = new Date(day); d.setDate(d.getDate() + n); setDay(`${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`) }
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }))
+  const setPhase = (i, field, v) => setPhases((arr) => arr.map((x, j) => (j === i ? { ...x, [field]: v } : x)))
   const hzCelkom = ALL_MIN.reduce((s, [k]) => s + (+form[k] || 0), 0)
 
   const basePayload = () => {
@@ -117,16 +176,19 @@ function PlanDay({ aid }) {
     else { const { data } = await supabase.from('training_day').insert(payload).select('id').single(); id = data?.id }
     if (id) {
       await supabase.from('training_phase').delete().eq('day_id', id)
-      const ins = phases.map((t, i) => ({ day_id: id, phase: i + 1, text: t || null })).filter((p) => p.text)
+      const ins = phases.map((p, i) => ({ day_id: id, phase: i + 1, text: p.text || null, objem: p.objem || null, intenzita: p.intenzita || null, technicka: p.technicka || null, psychicka: p.psychicka || null })).filter((p) => p.text || p.objem || p.intenzita || p.technicka || p.psychicka)
       if (ins.length) await supabase.from('training_phase').insert(ins)
     }
     return id
   }
   const save = async () => {
     setSaving(true); setMsg('')
-    const id = await writeDay(aid, day)
-    if (!id) { setMsg('Chyba pri ukladaní'); setSaving(false); return }
-    setExistingId(id); setSaving(false); setMsg('Uložené ✓'); setTimeout(() => setMsg(''), 1800)
+    const tgts = (targets && targets.length) ? targets : [aid]
+    let firstId = null
+    for (const t of tgts) { const id = await writeDay(t, day); if (t === aid) firstId = id }
+    setSaving(false)
+    if (firstId) setExistingId(firstId)
+    setMsg(groupMode ? `Uložené pre ${tgts.length} hráčov ✓` : 'Uložené ✓'); setTimeout(() => setMsg(''), 2200)
   }
   const toggleTarget = (id) => setCopyTargets((t) => t.includes(id) ? t.filter((x) => x !== id) : [...t, id])
   const doCopy = async () => {
@@ -151,11 +213,19 @@ function PlanDay({ aid }) {
       <div className="card sk-card">
         <div className="sk-h">Zameranie tréningu / fázy dňa</div>
         {PHASES.map((p, i) => (
-          <div key={p} style={{ marginBottom: 8 }}>
-            <div className="lbl-s">{p}</div>
-            <textarea className="ta" rows={2} value={phases[i]}
-              onChange={(e) => setPhases((arr) => arr.map((x, j) => (j === i ? e.target.value : x)))}
+          <div key={p} className="phase-block">
+            <div className="lbl-s" style={{ fontWeight: 700, color: 'var(--accent2)' }}>{p}</div>
+            <textarea className="ta" rows={2} value={phases[i]?.text || ''}
+              onChange={(e) => setPhase(i, 'text', e.target.value)}
               placeholder="čo má hráč v tejto fáze trénovať…" />
+            <div className="metrics">
+              {PHASE_METRICS.map(([mk, ml]) => (
+                <div key={mk} className="metric">
+                  <label className="lbl-s" style={{ marginBottom: 3 }}>{ml}</label>
+                  <input className="inp" value={phases[i]?.[mk] || ''} onChange={(e) => setPhase(i, mk, e.target.value)} />
+                </div>
+              ))}
+            </div>
           </div>
         ))}
         <div className="lbl-s" style={{ marginTop: 6 }}>Poznámka k plánu</div>
@@ -181,7 +251,7 @@ function PlanDay({ aid }) {
       </div>
       {msg && <div className="okmsg" style={{ color: ACCENT }}>{msg}</div>}
       <button className="btn" style={{ marginTop: 12, background: ACCENT, color: '#2a0f0f' }} onClick={save} disabled={saving}>
-        {saving ? 'Ukladám…' : 'Uložiť plán'}
+        {saving ? 'Ukladám…' : (groupMode ? `Uložiť plán pre skupinu (${groupCount || 0})` : 'Uložiť plán')}
       </button>
 
       <button className="btn-ghost" style={{ marginTop: 10, width: '100%' }} onClick={() => setCopyOpen((o) => !o)}>

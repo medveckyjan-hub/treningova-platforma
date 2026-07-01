@@ -23,6 +23,7 @@ export default function Tim({ embedded } = {}) {
   const [rows, setRows] = useState([])
   const [loading, setLoading] = useState(true)
   const [sortBy, setSortBy] = useState('hz')
+  const [recent, setRecent] = useState([])
 
   useEffect(() => {
     const ids = athletes.map((a) => a.id)
@@ -36,6 +37,20 @@ export default function Tim({ embedded } = {}) {
     })()
     return () => { alive = false }
   }, [athletes.map((a) => a.id).join(','), od, doo])
+
+  useEffect(() => {
+    const ids = athletes.map((a) => a.id)
+    if (!ids.length) { setRecent([]); return }
+    let alive = true
+    ;(async () => {
+      const f = new Date(); f.setDate(f.getDate() - 2)
+      const fromStr = `${f.getFullYear()}-${pad(f.getMonth() + 1)}-${pad(f.getDate())}`
+      const { data } = await supabase.from('training_day').select('athlete_id, d')
+        .eq('kind', 'skutocnost').in('athlete_id', ids).gte('d', fromStr).lte('d', todayStr())
+      if (alive) setRecent(data || [])
+    })()
+    return () => { alive = false }
+  }, [athletes.map((a) => a.id).join(',')])
 
   if (role !== 'trener' && role !== 'admin')
     return <div className="page"><h2 className="page-title" style={{ color: ACCENT }}>Tím</h2><div className="card placeholder">Sekcia je pre trénerov a adminov.</div></div>
@@ -55,6 +70,11 @@ export default function Tim({ embedded } = {}) {
   const maxHz = Math.max(1, ...list.map((a) => a.hz))
   const teamHz = list.reduce((s, a) => s + a.hz, 0)
   const active = list.filter((a) => a.days > 0).length
+  const today = todayStr()
+  const loggedToday = new Set(recent.filter((r) => r.d === today).map((r) => r.athlete_id))
+  const loggedRecent = new Set(recent.map((r) => r.athlete_id))
+  const missToday = athletes.filter((a) => !loggedToday.has(a.id))
+  const miss3 = athletes.filter((a) => !loggedRecent.has(a.id))
 
   const goTo = (id) => { setSelectedId(id); nav('/') }
 
@@ -73,6 +93,16 @@ export default function Tim({ embedded } = {}) {
           <button className="flag" onClick={() => preset('7t')}>Posledných 7 týž.</button>
         </div>
       </div>
+
+      {athletes.length > 0 && (
+        <div className="card sk-card" style={{ borderLeft: '3px solid #f0b429' }}>
+          <div className="sk-h">🔔 Pripomienky – nezapísaný denník</div>
+          <div className="sumrow"><span>Dnes nezapísalo</span><span style={{ fontWeight: 800, color: missToday.length ? '#b7791f' : '#0f9d84' }}>{missToday.length}</span></div>
+          {missToday.length > 0 && <div className="muted small" style={{ marginTop: 4 }}>{missToday.map(nameOf).join(', ')}</div>}
+          <div className="sumrow" style={{ borderBottom: 'none', marginTop: 6 }}><span>3 dni bez záznamu</span><span style={{ fontWeight: 800, color: miss3.length ? '#c0392b' : '#0f9d84' }}>{miss3.length}</span></div>
+          {miss3.length > 0 && <div className="muted small" style={{ marginTop: 4 }}>{miss3.map(nameOf).join(', ')}</div>}
+        </div>
+      )}
 
       {loading ? <div className="muted" style={{ padding: 20, textAlign: 'center' }}>Načítavam…</div> : athletes.length === 0 ? (
         <div className="muted" style={{ padding: 8 }}>Zatiaľ nemáš priradených hráčov. Pridaj ich v Nastaveniach → Skupiny.</div>

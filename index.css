@@ -218,3 +218,9 @@ a { color: var(--accent); }
 .phase-block:last-of-type { border-bottom: none; }
 .metrics { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
 .metric label { display: block; }
+
+/* ---- Sústredenie – tlač mriežky ---- */
+.camptable { font-size: 10px; }
+.camptable th, .camptable td { padding: 4px 5px; }
+@media print { @page { size: A4 landscape; margin: 10mm; } }
+.logo-full { width: 230px; max-width: 82%; height: auto; margin: 0 auto 6px; display: block; }

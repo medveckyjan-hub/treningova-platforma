@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useAuth } from './AuthContext'
 import Tim from './Tim'
 import Vykaz from './Vykaz'
+import Sustredenie from './Sustredenie'
 
 const ACCENT = '#38bdf8'
 export default function Trener() {
@@ -19,7 +20,7 @@ export default function Trener() {
       </div>
       {tab === 'tim' && <Tim embedded />}
       {tab === 'vykaz' && <Vykaz />}
-      {tab === 'sustredenie' && <div className="card placeholder">Plán sústredenia pripravím v ďalšom kroku (Časť 3).</div>}
+      {tab === 'sustredenie' && <Sustredenie />}
     </div>
   )
 }
