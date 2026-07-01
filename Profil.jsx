@@ -14,20 +14,29 @@ function initials(name) {
   return ((p[0]?.[0] || '') + (p[1]?.[0] || '')).toUpperCase()
 }
 
-const AP_FIELDS = [
+const MATERIAL_FIELDS = [
+  ['drevo_znacka', 'Drevo – značka', 'text'],
+  ['drevo_typ', 'Drevo – typ/druh (napr. OFF, ALL, karbón)', 'text'],
+  ['potah_fh', 'Forhend – poťah (typ)', 'text'],
+  ['potah_fh_hrubka', 'Forhend – hrúbka', 'text'],
+  ['potah_fh_farba', 'Forhend – farba', 'text'],
+  ['potah_bh', 'Bekhend – poťah (typ)', 'text'],
+  ['potah_bh_hrubka', 'Bekhend – hrúbka', 'text'],
+  ['potah_bh_farba', 'Bekhend – farba', 'text'],
+]
+const INFO_FIELDS = [
   ['bydlisko', 'Bydlisko', 'text'],
   ['mobil', 'Mobil', 'tel'],
   ['vyska_cm', 'Výška (cm)', 'number'],
   ['vaha_kg', 'Váha (kg)', 'number'],
   ['hracia_ruka', 'Hracia ruka', 'text'],
   ['ponatie', 'Poňatie hry', 'text'],
-  ['drevo_znacka', 'Drevo (značka)', 'text'],
-  ['potahy', 'Poťahy', 'text'],
   ['treningovy_klub', 'Tréningový klub', 'text'],
   ['zaciatok_kariery', 'Začiatok kariéry (rok)', 'number'],
   ['trener_meno', 'Tréner', 'text'],
   ['trener_email', 'E-mail trénera', 'email'],
 ]
+const AP_FIELDS = [...MATERIAL_FIELDS, ...INFO_FIELDS]
 const TEST_FIELDS = [
   ['vyska', 'Výška (cm)'], ['vaha', 'Váha (kg)'], ['beh', 'Beh (s)'],
   ['skok', 'Skok do diaľky (cm)'], ['medicimbal', 'Medicimbal 2kg (m)'],
@@ -123,8 +132,18 @@ function UdajeView({ aid, email }) {
         <input className="inp" value={email || ''} disabled style={{ opacity: 0.6 }} />
       </div>
       <div className="card sk-card">
+        <div className="sk-h">Výstroj / materiál</div>
+        {MATERIAL_FIELDS.map(([k, l, type]) => (
+          <div key={k} style={{ marginBottom: 8 }}>
+            <div className="lbl-s">{l}</div>
+            <input className="inp" type={type === 'number' ? 'number' : type === 'email' ? 'email' : type === 'tel' ? 'tel' : 'text'}
+              value={f[k] ?? ''} onChange={(e) => set(k, e.target.value)} />
+          </div>
+        ))}
+      </div>
+      <div className="card sk-card">
         <div className="sk-h">Hráčske údaje</div>
-        {AP_FIELDS.map(([k, l, type]) => (
+        {INFO_FIELDS.map(([k, l, type]) => (
           <div key={k} style={{ marginBottom: 8 }}>
             <div className="lbl-s">{l}</div>
             <input className="inp" type={type === 'number' ? 'number' : type === 'email' ? 'email' : type === 'tel' ? 'tel' : 'text'}

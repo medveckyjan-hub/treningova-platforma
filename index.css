@@ -1,11 +1,11 @@
 :root {
-  --bg: #0f1b22;
-  --panel: #15242e;
-  --panel2: #1b2e3a;
-  --line: rgba(255, 255, 255, 0.08);
-  --txt: #e7eef2;
-  --muted: rgba(231, 238, 242, 0.55);
-  --accent: #4cc9b0;
+  --bg: #eef1f5;
+  --panel: #ffffff;
+  --panel2: #f1f4f8;
+  --line: rgba(15, 27, 34, 0.10);
+  --txt: #1f2b33;
+  --muted: rgba(31, 43, 51, 0.58);
+  --accent: #17a58f;
   --accent2: #2f7d8f;
 }
 * { box-sizing: border-box; }
@@ -151,3 +151,42 @@ a { color: var(--accent); }
 .cmp-row span:nth-child(2), .cmp-row span:nth-child(3) { text-align: right; font-weight: 700; }
 .cmp-head { color: var(--muted); font-weight: 800; text-transform: uppercase; font-size: 11px; letter-spacing: .3px; }
 .cmp-head span { font-weight: 800 !important; }
+
+/* ---- kopírovanie tréningu ---- */
+.copylist { display: flex; flex-direction: column; gap: 4px; max-height: 260px; overflow-y: auto; }
+.copyitem { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel2); cursor: pointer; font-size: 14px; }
+.copyitem.on { border-color: rgba(52,211,153,0.5); background: rgba(52,211,153,0.12); }
+.copyitem input { width: 18px; height: 18px; }
+
+/* ---- Tím / grafy ---- */
+.teamrow { width: 100%; display: flex; align-items: center; gap: 12px; padding: 10px 2px; border: none; border-bottom: 1px solid var(--line); background: transparent; color: var(--txt); cursor: pointer; text-align: left; }
+.teamrow:last-child { border-bottom: none; }
+.teamrow-mid { flex: 1; min-width: 0; }
+.teamrow-name { font-weight: 700; font-size: 14px; margin-bottom: 4px; }
+.teamrow-sub { font-size: 12px; color: var(--muted); margin-top: 4px; }
+.teamrow-arrow { color: var(--muted); font-size: 20px; }
+.bar-track { height: 8px; background: var(--panel2); border-radius: 5px; overflow: hidden; }
+.bar-fill { height: 100%; border-radius: 5px; transition: width .3s ease; }
+.bar-row { display: flex; align-items: center; gap: 10px; padding: 6px 0; font-size: 13px; }
+.bar-row .bar-l { width: 92px; flex-shrink: 0; color: var(--muted); }
+.bar-row .bar-track { flex: 1; }
+.bar-row .bar-v { width: 74px; text-align: right; font-weight: 700; flex-shrink: 0; }
+
+
+/* ================= SVETLÁ TÉMA – doladenie ================= */
+.card { box-shadow: 0 1px 2px rgba(20, 32, 42, 0.06); }
+.topbar { box-shadow: 0 1px 3px rgba(20, 32, 42, 0.04); }
+.bottomnav { box-shadow: 0 -1px 4px rgba(20, 32, 42, 0.05); }
+.btn-ghost { background: rgba(20, 32, 42, 0.05); }
+.msg { color: #c0392b; }
+.del { color: #c0392b; background: rgba(192, 57, 43, 0.10); }
+/* zelené texty čitateľnejšie na bielom */
+.segbtn.on { color: #0f9d84; }
+.sk-total strong { color: #0f9d84; }
+.numrow-sum span:last-child { color: #0f9d84; }
+.wk-v { color: #0f9d84; }
+.okmsg { color: #0f9d84; }
+/* zlaté texty čitateľnejšie na bielom */
+.res-badge { color: #b7791f; }
+.res-place { color: #b7791f; }
+.goaltag { color: #b7791f; }

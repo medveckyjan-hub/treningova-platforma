@@ -6,15 +6,18 @@ import { useAthlete, AthletePicker } from './AthleteContext'
 const ACCENT = '#f87171'
 const ST_FIELDS = [
   ['herkombi_pra', 'Herné kombinácie pravidelné'],
+  ['herkombi_pra_servis', 'Herné kombinácie pravidelné so servisom'],
   ['herkombi_nepra', 'Herné kombinácie nepravidelné'],
+  ['herkombi_nepra_servis', 'Herné kombinácie nepravidelné so servisom'],
   ['zasobnik', 'Zásobník'],
   ['podanie_prijem', 'Podanie a príjem'],
   ['treningove_sety', 'Tréningové sety'],
   ['zapasy_cas_min', 'Zápasy/turnaje (čas)'],
 ]
-const KOND_FIELDS = [['kondicia', 'Kondícia'], ['posilnovanie', 'Posilňovanie']]
-const OTHER_FIELDS = [['regeneracia', 'Regenerácia'], ['kompenzacia', 'Kompenzácia a strečing'], ['taktika', 'Taktika']]
+const KOND_FIELDS = [['kondicia', 'Kondícia'], ['posilnovanie', 'Posilňovanie'], ['specialna_priprava', 'Špeciálna príprava'], ['specificka_priprava', 'Špecifická príprava']]
+const OTHER_FIELDS = [['regeneracia', 'Regenerácia'], ['kompenzacia', 'Kompenzácia a strečing'], ['taktika', 'Taktika'], ['psychologia', 'Psychológia']]
 const ALL_MIN = [...ST_FIELDS, ...KOND_FIELDS, ...OTHER_FIELDS]
+const hzOf = (r) => ALL_MIN.reduce((s, [k]) => s + (+r[k] || 0), 0)
 const PHASES = ['Dopoludnia', 'Popoludní', 'Večer']
 const pad = (n) => String(n).padStart(2, '0')
 const todayStr = () => { const d = new Date(); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}` }
@@ -55,6 +58,7 @@ export default function Plan() {
 
 // ---------- DENNÝ PLÁN ----------
 function PlanDay({ aid }) {
+  const { athletes } = useAthlete()
   const [day, setDay] = useState(todayStr())
   const [form, setForm] = useState({})
   const [phases, setPhases] = useState(['', '', ''])
@@ -62,6 +66,11 @@ function PlanDay({ aid }) {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [msg, setMsg] = useState('')
+  const [copyOpen, setCopyOpen] = useState(false)
+  const [copyDate, setCopyDate] = useState(todayStr())
+  const [copyTargets, setCopyTargets] = useState([])
+  const [copying, setCopying] = useState(false)
+  const [copyMsg, setCopyMsg] = useState('')
 
   useEffect(() => {
     if (!aid) return
@@ -88,30 +97,47 @@ function PlanDay({ aid }) {
     return () => { alive = false }
   }, [aid, day])
 
+  useEffect(() => { setCopyDate(day); setCopyTargets(aid ? [aid] : []) }, [day, aid])
+
   const navDay = (n) => { const d = new Date(day); d.setDate(d.getDate() + n); setDay(`${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`) }
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }))
   const hzCelkom = ALL_MIN.reduce((s, [k]) => s + (+form[k] || 0), 0)
 
+  const basePayload = () => {
+    const p = { kind: 'plan', motiv: form.motiv || null, tj: +form.tj || 0 }
+    ALL_MIN.forEach(([k]) => (p[k] = +form[k] || 0))
+    return p
+  }
+  const writeDay = async (tid, tdate) => {
+    const payload = { ...basePayload(), athlete_id: tid, d: tdate }
+    const { data: ex } = await supabase.from('training_day').select('id').eq('athlete_id', tid).eq('kind', 'plan').eq('d', tdate).limit(1)
+    let id = ex?.[0]?.id
+    if (id) await supabase.from('training_day').update(payload).eq('id', id)
+    else { const { data } = await supabase.from('training_day').insert(payload).select('id').single(); id = data?.id }
+    if (id) {
+      await supabase.from('training_phase').delete().eq('day_id', id)
+      const ins = phases.map((t, i) => ({ day_id: id, phase: i + 1, text: t || null })).filter((p) => p.text)
+      if (ins.length) await supabase.from('training_phase').insert(ins)
+    }
+    return id
+  }
   const save = async () => {
     setSaving(true); setMsg('')
-    const payload = { athlete_id: aid, kind: 'plan', d: day, motiv: form.motiv || null, tj: +form.tj || 0 }
-    ALL_MIN.forEach(([k]) => (payload[k] = +form[k] || 0))
-    let dayId = existingId
-    if (existingId) {
-      const { error } = await supabase.from('training_day').update(payload).eq('id', existingId)
-      if (error) { setMsg('Chyba pri ukladaní'); setSaving(false); return }
-    } else {
-      const { data, error } = await supabase.from('training_day').insert(payload).select('id').single()
-      if (error) { setMsg('Chyba pri ukladaní'); setSaving(false); return }
-      dayId = data.id; setExistingId(data.id)
-    }
-    await supabase.from('training_phase').delete().eq('day_id', dayId)
-    const ins = phases.map((t, i) => ({ day_id: dayId, phase: i + 1, text: t || null })).filter((p) => p.text)
-    if (ins.length) await supabase.from('training_phase').insert(ins)
-    setSaving(false); setMsg('Uložené ✓'); setTimeout(() => setMsg(''), 1800)
+    const id = await writeDay(aid, day)
+    if (!id) { setMsg('Chyba pri ukladaní'); setSaving(false); return }
+    setExistingId(id); setSaving(false); setMsg('Uložené ✓'); setTimeout(() => setMsg(''), 1800)
+  }
+  const toggleTarget = (id) => setCopyTargets((t) => t.includes(id) ? t.filter((x) => x !== id) : [...t, id])
+  const doCopy = async () => {
+    const targets = athletes.length ? copyTargets : [aid]
+    if (!targets.length || !copyDate) return
+    setCopying(true); setCopyMsg('')
+    for (const tid of targets) await writeDay(tid, copyDate)
+    setCopying(false); setCopyMsg(`Skopírované \u2713 (${targets.length}\u00d7)`); setTimeout(() => setCopyMsg(''), 2400)
   }
 
   if (loading) return <div className="muted" style={{ padding: 20, textAlign: 'center' }}>Načítavam…</div>
+  const nameOf = (a) => `${a?.meno || ''} ${a?.priezvisko || ''}`.trim() || a?.email || '—'
   return (
     <>
       <div className="daynav">
@@ -120,6 +146,21 @@ function PlanDay({ aid }) {
         <span className="wd">{WD[new Date(day).getDay()]}</span>
         <button className="navbtn" onClick={() => navDay(1)}>›</button>
       </div>
+
+      <div className="card sk-card">
+        <div className="sk-h">Zameranie tréningu / fázy dňa</div>
+        {PHASES.map((p, i) => (
+          <div key={p} style={{ marginBottom: 8 }}>
+            <div className="lbl-s">{p}</div>
+            <textarea className="ta" rows={2} value={phases[i]}
+              onChange={(e) => setPhases((arr) => arr.map((x, j) => (j === i ? e.target.value : x)))}
+              placeholder="čo má hráč v tejto fáze trénovať…" />
+          </div>
+        ))}
+        <div className="lbl-s" style={{ marginTop: 6 }}>Poznámka k plánu</div>
+        <input className="inp" value={form.motiv} onChange={(e) => set('motiv', e.target.value)} />
+      </div>
+
       <div className="card sk-card">
         <div className="sk-h">Plán – stolný tenis (min)</div>
         {ST_FIELDS.map(([k, l]) => <NumRow key={k} label={l} value={form[k]} onCh={(v) => set(k, v)} />)}
@@ -133,19 +174,7 @@ function PlanDay({ aid }) {
         <div className="sk-h">Plán – ostatné (min)</div>
         {OTHER_FIELDS.map(([k, l]) => <NumRow key={k} label={l} value={form[k]} onCh={(v) => set(k, v)} />)}
       </div>
-      <div className="card sk-card">
-        <div className="sk-h">Zameranie / fázy dňa</div>
-        {PHASES.map((p, i) => (
-          <div key={p} style={{ marginBottom: 8 }}>
-            <div className="lbl-s">{p}</div>
-            <textarea className="ta" rows={2} value={phases[i]}
-              onChange={(e) => setPhases((arr) => arr.map((x, j) => (j === i ? e.target.value : x)))}
-              placeholder="čo má hráč v tejto fáze trénovať…" />
-          </div>
-        ))}
-        <div className="lbl-s" style={{ marginTop: 6 }}>Poznámka k plánu</div>
-        <input className="inp" value={form.motiv} onChange={(e) => set('motiv', e.target.value)} />
-      </div>
+
       <div className="card sk-total" style={{ background: 'rgba(248,113,113,0.12)', borderColor: 'rgba(248,113,113,0.3)' }}>
         <span>Plánované HZ celkom</span><strong style={{ color: ACCENT }}>{fmtMin(hzCelkom)}</strong>
       </div>
@@ -153,6 +182,36 @@ function PlanDay({ aid }) {
       <button className="btn" style={{ marginTop: 12, background: ACCENT, color: '#2a0f0f' }} onClick={save} disabled={saving}>
         {saving ? 'Ukladám…' : 'Uložiť plán'}
       </button>
+
+      <button className="btn-ghost" style={{ marginTop: 10, width: '100%' }} onClick={() => setCopyOpen((o) => !o)}>
+        {copyOpen ? 'Zavrieť kopírovanie' : '⧉ Kopírovať plán viacerým hráčom'}
+      </button>
+      {copyOpen && (
+        <div className="card sk-card" style={{ marginTop: 10 }}>
+          <div className="muted small" style={{ marginBottom: 10 }}>Skopíruje aktuálny plán (zameranie aj čísla) na zvolený dátum a hráčov.</div>
+          <div className="lbl-s">Dátum</div>
+          <input type="date" className="inp" value={copyDate} onChange={(e) => setCopyDate(e.target.value)} />
+          {athletes.length > 0 ? (
+            <>
+              <div className="lbl-s" style={{ marginTop: 10 }}>Hráči ({copyTargets.length})</div>
+              <div className="copylist">
+                {athletes.map((a) => (
+                  <label key={a.id} className={'copyitem' + (copyTargets.includes(a.id) ? ' on' : '')}>
+                    <input type="checkbox" checked={copyTargets.includes(a.id)} onChange={() => toggleTarget(a.id)} />
+                    <span>{nameOf(a)}</span>
+                  </label>
+                ))}
+              </div>
+            </>
+          ) : (
+            <div className="muted small" style={{ marginTop: 8 }}>Skopíruje sa na zvolený dátum.</div>
+          )}
+          {copyMsg && <div className="okmsg" style={{ color: ACCENT }}>{copyMsg}</div>}
+          <button className="btn" style={{ marginTop: 10, background: ACCENT, color: '#2a0f0f' }} onClick={doCopy} disabled={copying}>
+            {copying ? 'Kopírujem…' : 'Kopírovať'}
+          </button>
+        </div>
+      )}
     </>
   )
 }
@@ -187,7 +246,7 @@ function Compare({ aid }) {
   const real = rows.filter((r) => r.kind === 'skutocnost')
   const sumP = (k) => plan.reduce((s, r) => s + (r[k] || 0), 0)
   const sumR = (k) => real.reduce((s, r) => s + (r[k] || 0), 0)
-  const hzP = sumP('hz_celkom'), hzR = sumR('hz_celkom')
+  const hzP = plan.reduce((s, r) => s + hzOf(r), 0), hzR = real.reduce((s, r) => s + hzOf(r), 0)
   const pct = hzP > 0 ? Math.round((hzR / hzP) * 100) : 0
 
   return (
@@ -209,6 +268,13 @@ function Compare({ aid }) {
             <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>Plán HZ</span><strong style={{ color: ACCENT }}>{fmtMin(hzP)}</strong></div>
             <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>Skutočnosť HZ</span><strong style={{ color: '#34d399' }}>{fmtMin(hzR)}</strong></div>
             <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid var(--line)', paddingTop: 6 }}><span>Splnenie</span><strong>{pct} %</strong></div>
+          </div>
+          <div className="card sk-card">
+            <div className="sk-h">HZ – plán vs skutočnosť</div>
+            {(() => { const mx = Math.max(1, hzP, hzR); return (<>
+              <div className="bar-row"><span className="bar-l">Plán</span><div className="bar-track"><div className="bar-fill" style={{ width: `${(hzP / mx) * 100}%`, background: ACCENT }} /></div><span className="bar-v">{fmtMin(hzP)}</span></div>
+              <div className="bar-row"><span className="bar-l">Skutočnosť</span><div className="bar-track"><div className="bar-fill" style={{ width: `${(hzR / mx) * 100}%`, background: '#34d399' }} /></div><span className="bar-v">{fmtMin(hzR)}</span></div>
+            </>) })()}
           </div>
           <div className="card sk-card">
             <div className="cmp-row cmp-head"><span>Činnosť</span><span>Plán</span><span>Skut.</span></div>

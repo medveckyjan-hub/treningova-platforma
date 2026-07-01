@@ -50,6 +50,14 @@ export const User = (p) => (
     <path d="M5.5 20a6.5 6.5 0 0 1 13 0" />
   </Svg>
 )
+export const Users = (p) => (
+  <Svg {...p}>
+    <circle cx="9" cy="8" r="3.2" />
+    <path d="M3.6 19a5.4 5.4 0 0 1 10.8 0" />
+    <path d="M16 5.3a3.2 3.2 0 0 1 0 5.9" />
+    <path d="M17.4 13.6a5.4 5.4 0 0 1 3 4.9" />
+  </Svg>
+)
 export const Target = (p) => (
   <Svg {...p}>
     <circle cx="12" cy="12" r="9" />
